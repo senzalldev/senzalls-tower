@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { GameScene } from "../game/GameScene";
 import { PhaserGame } from "../game/PhaserGame";
 import { buildTransportMetrics } from "../game/transportSelectors";
-import type { TowerSocket } from "../lib/socket";
+import type { GameSocket } from "../lib/socket";
 import type { SelectedTool, SimStateData } from "../types";
 import { getTileStarRequirement } from "../types";
 import { CellInspectionDialog } from "./CellInspectionDialog";
@@ -21,7 +21,7 @@ import { useTowerSession } from "./useTowerSession";
 interface Props {
 	playerId: string;
 	displayName: string;
-	socket: TowerSocket;
+	socket: GameSocket;
 	towerId: string;
 	initialTool?: SelectedTool;
 	onLeave: () => void;

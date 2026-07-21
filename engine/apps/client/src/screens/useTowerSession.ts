@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { GameScene } from "../game/GameScene";
-import type { TowerSocket } from "../lib/socket";
+import type { GameSocket } from "../lib/socket";
 import { getTowerToolbarCache } from "../lib/storage";
 import type { ConnectionStatus } from "../types";
 import type { ActivePrompt, CellInfoData } from "./gameScreenTypes";
@@ -15,7 +15,7 @@ interface UseTowerSessionOptions {
 	towerId: string;
 	playerId: string;
 	displayName: string;
-	socket: TowerSocket;
+	socket: GameSocket;
 	sceneRef: React.RefObject<GameScene | null>;
 	addToast: (message: string, variant?: "error" | "info") => void;
 	onSimTime: (simTime: number) => void;

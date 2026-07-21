@@ -4,6 +4,7 @@
 // delivered synchronously to onMessage listeners.
 
 import { LocalGameHost } from "./LocalGameHost";
+import type { GameSocket } from "../lib/socket";
 import type { SimSnapshot } from "../../../worker/src/sim/index";
 import type { ClientMessage, ConnectionStatus, ServerMessage } from "../types";
 
@@ -17,7 +18,7 @@ export interface LocalTowerSocketOptions {
 	snapshot?: SimSnapshot | null;
 }
 
-export class LocalTowerSocket {
+export class LocalTowerSocket implements GameSocket {
 	private readonly options: LocalTowerSocketOptions;
 	private host: LocalGameHost | null = null;
 	private status: ConnectionStatus = "disconnected";
@@ -68,6 +69,11 @@ export class LocalTowerSocket {
 
 	onStatus(listener: StatusListener): () => void {
 		this.statusListeners.add(listener);
+		// The real WebSocket transitions to "connected" asynchronously, after
+		// the controller has subscribed. Offline we connect synchronously, so
+		// replay the current status to each new subscriber — otherwise the
+		// controller misses the "connected" edge and never sends join_tower.
+		listener(this.status);
 		return () => this.statusListeners.delete(listener);
 	}
 

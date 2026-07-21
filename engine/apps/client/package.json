@@ -4,7 +4,10 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc && vite build",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"build:local": "VITE_LOCAL=1 tsc && VITE_LOCAL=1 vite build",
+		"preview:local": "VITE_LOCAL=1 vite preview --port 4321",
+		"dev:local": "VITE_LOCAL=1 vite"
 	},
 	"dependencies": {
 		"lucide-react": "^1.8.0",

@@ -5,7 +5,21 @@ type StatusListener = (status: ConnectionStatus) => void;
 
 const MAX_RECONNECT_DELAY = 30_000;
 
-export class TowerSocket {
+/**
+ * Transport contract shared by the online {@link TowerSocket} and the offline
+ * single-player LocalTowerSocket, so screens/controllers can accept either.
+ */
+export interface GameSocket {
+	connect(towerId: string): void;
+	disconnect(): void;
+	reconnect(): void;
+	getStatus(): ConnectionStatus;
+	send(msg: ClientMessage): void;
+	onMessage(listener: MessageListener): () => void;
+	onStatus(listener: StatusListener): () => void;
+}
+
+export class TowerSocket implements GameSocket {
 	private ws: WebSocket | null = null;
 	private currentTowerId: string | null = null;
 	private currentStatus: ConnectionStatus = "disconnected";

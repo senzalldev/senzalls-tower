@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { TowerSocket } from "./lib/socket";
+import {
+	createLocalSocket,
+	IS_LOCAL,
+	LOCAL_PLAYER_ID,
+	LOCAL_PLAYER_NAME,
+	LOCAL_TOWER_ID,
+} from "./local/localBootstrap";
+import { type GameSocket, TowerSocket } from "./lib/socket";
 import { getDisplayName, getPlayerId } from "./lib/storage";
 import { GameScreen } from "./screens/GameScreen";
 import { GuestScreen } from "./screens/GuestScreen";
@@ -44,7 +51,9 @@ async function resolveSlug(slug: string): Promise<string | null> {
 }
 
 export function App() {
-	const socketRef = useRef<TowerSocket>(new TowerSocket());
+	const socketRef = useRef<GameSocket>(
+		IS_LOCAL ? createLocalSocket() : new TowerSocket(),
+	);
 	const socket = socketRef.current;
 	const [screen, setScreen] = useState<Screen>("guest");
 	const [playerId, setPlayerId] = useState<string>("");
@@ -113,6 +122,16 @@ export function App() {
 	);
 
 	useEffect(() => {
+		if (IS_LOCAL) {
+			// Offline single-player: no guest/lobby, straight into the local tower.
+			setPlayerId(LOCAL_PLAYER_ID);
+			setDisplayName(LOCAL_PLAYER_NAME);
+			enterTower(LOCAL_TOWER_ID);
+			return () => {
+				socket.disconnect();
+			};
+		}
+
 		const storedId = getPlayerId();
 		const storedName = getDisplayName();
 		if (storedId && storedName) {
@@ -124,7 +143,7 @@ export function App() {
 		return () => {
 			socket.disconnect();
 		};
-	}, [socket, syncFromLocation]);
+	}, [socket, syncFromLocation, enterTower]);
 
 	useEffect(() => {
 		function onPopState() {

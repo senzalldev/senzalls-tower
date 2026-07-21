@@ -34,7 +34,6 @@ export interface LocalGameHostOptions {
 }
 
 export class LocalGameHost {
-	private readonly towerId: string;
 	private readonly emit: Emit;
 	private sim: TowerSim;
 	private tickTimer: ReturnType<typeof setInterval> | null = null;
@@ -46,7 +45,6 @@ export class LocalGameHost {
 	private readonly queuedInputs = new Map<number, QueuedInputBatch[]>();
 
 	constructor(options: LocalGameHostOptions) {
-		this.towerId = options.towerId;
 		this.emit = options.emit;
 		const snapshot =
 			options.snapshot ??
