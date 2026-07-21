@@ -1,0 +1,414 @@
+# Elevators And Carrier Transit
+
+## Carrier Types
+
+There are three carrier modes:
+
+| Property | Express (mode 0) | Standard (mode 1) | Service (mode 2) |
+|---|---|---|---|
+| Shaft width | 6 tiles | 4 tiles | 4 tiles |
+| Served floors | basements (1–10) + sky lobbies (24, 39, 54, …) | contiguous range, max 31 floors | contiguous range, max 31 floors |
+| Assignment capacity | 42 | 21 | 21 |
+| Passenger capacity (manual) | 36 | 17 | 17 |
+| Motion fast mode | yes (3 floors/step) | no | no |
+| Motion slow band | no | yes (1 floor/step, 2-tick door wait) | yes (1 floor/step, 2-tick door wait) |
+| Cost global | DS:0xe680 | DS:0xe67e | DS:0xe682 |
+
+These labels are build identities. The router's local-vs-express selection is related but not identical.
+
+### Served-Floor Mapping
+
+Express elevators use a fixed slot mapping (`floor_to_carrier_slot_index`):
+- Floors 1–10 (basements B9–B1 + ground lobby) → slots 0–9
+- Sky lobby floors where `(floor - 10) % 15 == 14` (i.e. 24, 39, 54, 69, 84, 99) → slot `(floor - 10) / 15 + 10`
+- All other floors → not served (returns -1)
+
+Standard and service elevators use a contiguous range:
+- Any floor from `bottom_served_floor` to `top_served_floor` → slot `floor - bottom_served_floor`
+- Span is capped at 31 floors
+
+Terminology used in this spec:
+
+- **carrier** = the shaft/header-level record: mode, served-floor span, schedule tables, queue tables, transfer reachability, and up to 8 moving units
+- **car** = one moving cab inside a carrier
+
+The simulation uses data from both levels during dispatch, so older notes sometimes used
+"carrier" and "car" interchangeably. This spec does not: queueing and reachability are
+carrier-level; motion, doors, dwell, and assignments are car-level.
+
+## Carrier Record
+
+A carrier needs:
+
+- carrier mode (0 = express, 1 = standard, 2 = service)
+- top and bottom served floors
+- assignment capacity
+- per-daypart schedule data
+- served-floor flags
+- upward and downward floor-assignment tables
+- up to 8 car units
+
+### Schedule Tables
+
+Each carrier has several distinct 14-entry daypart/calendar tables plus a separate
+per-floor served-floor table. For parity, treat them as:
+
+| Table | Placement default | Runtime use |
+|-------|-------------------|-------------|
+| service/schedule table | `1` for every slot | scheduler/UI-facing daypart enable data |
+| dispatch-threshold table | `5` for every slot | moving-car versus idle-home-car selection threshold |
+| express-mode table | `0` for every slot | copied into a car's runtime `schedule_flag` |
+| dwell/enable table | `0` for every slot | departure dwell gate read by `should_car_depart` |
+| served-floor table | only the placed floor is served | per-floor coverage for routing and transfer logic |
+
+For a newly placed standard elevator, the clone should therefore initialize its semantic
+tables so that:
+
+- service/schedule flags default to enabled
+- dispatch-threshold values default to `5`
+- express-mode defaults to off
+- dwell/enable defaults to `0`
+- the car's runtime `schedule_flag` starts at `0`
+
+The clone does not need to mirror the EXE's field layout, only these table meanings and
+defaults.
+
+The current schedule slot index is computed as:
+
+```
+schedule_index = daypart_index + calendar_phase_flag * 7
+```
+
+This produces 14 values: 7 dayparts × 2 calendar phases. `daypart_index` ranges 0–6,
+`calendar_phase_flag` is 0 or 1.
+
+The same index is used for each 14-entry daypart table. The served-floor table is not
+indexed by daypart; it is indexed by raw floor `0..119`.
+
+### Schedule Modes
+
+Two different values are involved:
+
+- the car's runtime `schedule_flag` controls target selection in `select_next_target_floor`
+- the current dwell/enable table entry controls departure timing in `should_car_depart`
+
+| `schedule_flag` | Target-selection behavior |
+|---|---|
+| `1` | Express up: scans downward for assignments; fallback target = `top_served_floor` |
+| `2` | Express down: scans upward for assignments; fallback target = `bottom_served_floor` |
+| any other value | Normal: bidirectional sweep in current direction with endpoint wrap |
+
+- **Express up** (`schedule_flag == 1`): car prioritizes ascending. When it has no
+  assignments in the downward scan, it returns to `top_served_floor`. This is the
+  morning rush mode — shuttles passengers from lobby to upper floors.
+- **Express down** (`schedule_flag == 2`): car prioritizes descending. When it has no
+  assignments in the upward scan, it returns to `bottom_served_floor`. This is the
+  evening rush mode — shuttles passengers from upper floors to lobby.
+- **Normal** (any other value): standard bidirectional sweep. The car scans for
+  assigned floors in its current direction, wraps around at endpoints, and returns
+  -1 if no assignments exist.
+
+The "express to top/bottom" behavior is tied to the car's runtime `schedule_flag`, whose
+source is the per-daypart express-mode table. It is not tied to the served-floor table and
+not to the service/schedule flags. Dwell is separate: `should_car_depart` returns true
+immediately if the current dwell/enable slot is zero, otherwise it allows the car to keep
+waiting until `abs(day_tick - departure_timestamp) >
+slot_value * 30`.
+
+Assignment capacities:
+
+- Express Elevator: 42 logical assignment slots
+- Standard Elevator: 21 logical assignment slots
+- Service Elevator: 21 logical assignment slots
+
+## Car Record
+
+Each car needs:
+
+- current floor
+- previous floor
+- target floor
+- direction
+- settle (sub-floor animation countdown — see "Door And Boarding Counters")
+- dwell (boarding/departure-sequence countdown — see "Door And Boarding Counters")
+- departure flag
+- departure timestamp
+- assigned passenger count
+- schedule dwell flag
+- per-destination request counts
+
+## Queue Drain
+
+For each active car:
+
+1. require the current floor queue to be dispatchable (i.e. the queue for this floor has at least one entry in either direction)
+2. compute `remaining_slots = assignment_capacity - assigned_count`
+3. look up the queue depth for the current direction; if it is empty and the car has no pending destination (`target_floor == -1` and `pending_assignment_count == 0`), flip direction
+4. pop requests FIFO from the primary direction queue, up to `remaining_slots`
+5. if the car's alternate-direction flag is enabled and slots remain, also pop FIFO from the reverse-direction queue
+6. for each popped request:
+   - ask the family-specific handler for the actor's target floor
+   - choose the actual boarding or transfer floor from the carrier reachability tables
+   - insert the request into the first free active route slot
+   - increment the per-destination request counter
+7. if transfer-floor resolution fails, apply the requeue-failure delay and force the actor back to its family dispatch path
+
+Transfer-floor chooser:
+
+- if the carrier serves the actor's target floor directly, use that floor
+- otherwise read `reachability_masks_by_floor[target_floor]`
+- scan transfer-group entries `0..15` in ascending order
+- accept the first live entry whose tagged floor is not the current floor, whose carrier mask overlaps the target-floor reachability mask, and whose tagged floor lies in the requested travel direction
+- if none match, fail the assignment
+
+Queue records are ring buffers:
+
+- Each floor has an upward queue and a downward queue.
+- Each queue has a count, a head index, and 40 request-reference slots.
+- Enqueue writes at (head + count) % 40.
+- Dequeue reads head, then advances head = (head + 1) % 40 and decrements count.
+
+Per-car active-route storage has 42 physical slots, but standard and service cars only consume the first 21 because `assignment_capacity = 21`.
+
+Active-slot behavior:
+
+- free slot sentinel: destination floor `0xff`
+- insertion scans from slot `0` upward and uses the first free slot
+- unload and removal paths scan only `0 .. assignment_capacity - 1`
+
+## Arrival Dispatch
+
+When a car reaches a floor:
+
+1. unload every active route slot whose destination matches the current floor
+2. write the actor's current floor
+3. hand control back to that actor family's arrival/dispatch logic
+4. decrement assigned counts and destination counters
+
+Arrival dispatch uses the family-specific state handler for the arriving actor family; the elevator layer does not directly interpret family states beyond invoking the correct handler.
+
+## Car State Machine
+
+Per tick, each active car is in one of three broad phases:
+
+- doors open / boarding
+- in transit
+- idle at a floor
+
+Behavior:
+
+- if doors are open, the car either continues waiting or completes the dwell sequence
+- if in transit, the motion timer counts down and the car reevaluates its target when the timer expires
+- if idle, the car either begins a departure sequence at the current floor or moves one step toward its next target
+
+Idle-floor behavior:
+
+- at target floor, if passengers are waiting there or the car is still below assignment capacity:
+  - reload `schedule_flag` at terminal floors from the 14-entry express-mode table
+  - clear stale floor-request assignments for the current floor
+  - set `dwell = 5`
+  - if `departure_flag == 0`, stamp `departure_timestamp = day_tick`
+  - set `departure_flag = 1`
+- otherwise:
+  - clear stale assignments for the current floor
+  - move one step toward the current target
+  - if the current floor still has pending direction flags, assign this car to those floor requests
+
+## Motion Profile
+
+Motion profile is computed by `compute_car_motion_mode`, which returns a mode 0–3 based
+on `carrier_mode`, distance to target, and distance from previous floor.
+
+### carrier_mode 0 (express elevator)
+
+| Condition | Mode | Step | settle | Ticks/floor |
+|-----------|------|------|-----------|-------------|
+| `dist_to_target < 2` OR `dist_from_prev < 2` | 0 (stop/decel) | ±1 floor | set 5 → counts down | 6 (1 move + 5 animation) |
+| `dist_to_target > 4` AND `dist_from_prev > 4` | 3 (fast) | ±3 floors | — | 1/3 (instant, no animation) |
+| otherwise | 2 (normal) | ±1 floor | — | 1 (instant, no animation) |
+
+### carrier_mode ≠ 0 (standard / service elevator)
+
+| Condition | Mode | Step | settle | Ticks/floor |
+|-----------|------|------|-----------|-------------|
+| `dist_to_target < 2` OR `dist_from_prev < 2` | 0 (stop/decel) | ±1 floor | set 5 → counts down | 6 (1 move + 5 animation) |
+| `dist_to_target < 4` OR `dist_from_prev < 4` | 1 (slow) | ±1 floor | set 2 → counts down | 3 (1 move + 2 animation) |
+| otherwise | 2 (normal) | ±1 floor | — | 1 (instant, no animation) |
+
+Notes:
+- Mode 3 (±3 floors/step) exists **only** for carrier_mode 0 (express elevators).
+- Standard and service elevators have a slow-stop band (mode 1) that express elevators lack.
+- `settle` (binary field at car offset `+0x01`) is set during mode 0/1 moves and decrements once per sim tick. It is the sub-floor animation counter (see "Sub-floor Rendering" below) and the gate that blocks Branch A: arrival (and therefore the `dwell` sequence) cannot begin until `settle == 0`.
+- Modes 2 and 3 never set `settle`, so their `settle` remains 0 after a step and Branch A can fire the very next tick — no animation delay before arrival. They still go through the full `dwell` boarding sequence once at the target floor.
+- Distance is `abs(current_floor - target_floor)` or `abs(current_floor - prev_floor)`.
+
+## Departure Rules
+
+A car departs immediately when any of these are true:
+
+- it reaches assignment capacity
+- the current schedule slot is disabled
+- it has waited longer than its current dwell threshold
+
+Otherwise it can continue waiting at the floor for more passengers.
+
+At top and bottom served floors, the car's runtime `schedule_flag` is reloaded from the
+carrier's per-daypart express-mode table. The dwell threshold remains the current
+dwell/enable entry for the active schedule slot.
+
+Dwell-threshold rule:
+
+- depart immediately when the current dwell/enable slot is zero
+- otherwise depart when `abs(day_tick - departure_timestamp) > dwell_slot * 30`
+- `departure_timestamp` is set when `departure_flag` transitions from 0 to 1 (first boarding event at a floor)
+- `departure_flag` is cleared when the car begins moving away from the floor
+- a car that arrives at a floor with no waiting passengers and no pending assignments does not set `departure_flag` — it either moves toward its next target or idles
+
+## Floor Assignment
+
+When a floor request is raised:
+
+- if the floor is already assigned, do nothing
+- otherwise choose the best car
+- prefer an immediately available car at the floor when possible
+- otherwise compare moving-car cost against idle-home-car cost
+
+Candidate classes:
+
+- idle-home candidate: active, no pending assignments, no active destination load, doors closed, current floor at home floor
+- same-direction forward candidate: already moving in the requested direction and the request lies ahead
+- reversal / wrap candidate: fallback that would need retargeting behind the current sweep
+
+Cost formulas:
+
+- idle-home cost: `abs(request_floor - current_floor)`
+- same-direction forward cost:
+  - upward request: `request_floor - current_floor`
+  - downward request: `current_floor - request_floor`
+- same-direction wrap cost:
+  - upward request behind the current sweep: `(target_floor - current_floor) + (target_floor - request_floor)`
+  - downward request behind the current sweep: `(current_floor - target_floor) + (request_floor - target_floor)`
+- fallback reversal cost when the car is not already a same-direction candidate:
+  - if the request lies before the next turn floor in the requested direction, use direct distance from current floor to request floor
+  - otherwise use distance to the next turn floor plus distance back from that turn floor to the request floor
+
+Tie-break rules:
+
+- immediate early-accept: if a car is already at the requested floor with doors closed and either its schedule byte is nonzero or its direction already matches the request, select it immediately
+- otherwise compare the best moving-car cost against the best idle-home cost using the carrier's `dispatch_threshold` as a threshold
+- if `moving_cost - idle_home_cost < threshold`, choose the moving candidate
+- if `moving_cost - idle_home_cost >= threshold`, choose the idle-home candidate
+- exact equality breaks toward the idle-home candidate
+
+Observed selector ordering:
+
+- same-floor early accept returns immediately
+- otherwise the scorer keeps the best idle-home candidate, best same-direction-forward candidate, and best wrap/reversal candidate separately
+- if a forward candidate exists, it is compared against the idle-home candidate first
+- otherwise the best wrap/reversal candidate is compared against the idle-home candidate
+
+Edge case note:
+
+- If no forward or wrap/reversal moving candidate is available, the selector falls back to car index 0 rather than the best idle-home candidate. This appears intentional and should be preserved for parity.
+
+## Home Floor
+
+Each car has a per-car home floor value (`home_floor_by_car[car_index]`).
+
+- First car in a shaft: home floor = the floor where the player started the shaft.
+- Later cars: home floor = the floor the player clicked when placing that car.
+
+When a car has no pending assignments and no special flag, it returns to its home floor.
+
+Target-floor selection:
+
+- if a car has no pending assignments (`pending_assignment_count == 0`) and no special
+  flag, it returns to its home floor
+- otherwise behavior depends on the car's current `schedule_flag`:
+
+**`schedule_flag == 1` (express up):**
+- scans downward from current floor for assigned floors (passengers to pick up or
+  destination requests)
+- if no downward assignment found, returns `top_served_floor` as the target
+- this biases the car toward ascending — ideal for morning rush
+
+**`schedule_flag == 2` (express down):**
+- scans upward from current floor for assigned floors
+- if no upward assignment found, returns `bottom_served_floor` as the target
+- this biases the car toward descending — ideal for evening rush
+
+**Any other `schedule_flag` value (normal):**
+- scans for assigned floors in the current travel direction
+- if nothing found in current direction, wraps around: reverses direction and scans
+  from the opposite endpoint back toward the current floor
+- if still nothing found, returns -1 (no target)
+
+The nearest-work-floor helper uses the same home_floor_by_car slot as its final fallback when no pending work exists in the current travel direction.
+
+## Door And Boarding Counters
+
+Each car has two distinct countdown fields:
+
+- **`settle`** (binary offset `-0x5d`): sub-floor animation counter. Set by motion steps in modes 0/1; drives Branch C in the state machine; nonzero means the car is still animating between floors and boarding is blocked.
+- **`dwell`** (binary offset `-0x5c`): boarding/departure-sequence counter. Set to 5 when Branch A triggers arrival at a target floor; drives Branch B.
+
+Branch selection each tick:
+
+```
+if (settle > 0)              → Branch C  (animate, decrement settle)
+else if (dwell == 0)         → Branch A  (motion step or arrival trigger)
+else                         → Branch B  (boarding/departure countdown)
+```
+
+Boarding is only permitted once `settle == 0` — the arrival trigger (Branch A) cannot fire while a sub-floor animation is in progress.
+
+`settle` behavior (transit animation):
+
+- Mode 0 step sets `settle = 5`; mode 1 step sets `settle = 2`.
+- Each tick Branch C fires: if motion mode is still 0, `settle` decrements; if mode changed to nonzero, `settle` clears immediately.
+- Each Branch C tick sets the dirty flag so the renderer fires (see "Sub-floor Rendering").
+
+`dwell` behavior (boarding/departure sequence):
+
+- When Branch A fires at the target floor with passengers waiting or car under capacity, it sets `dwell = 5`. Arrival/unload effects fire at this moment.
+- Branch B decrements `dwell` each tick.
+- When `dwell` reaches 0, the car snapshots `prev_floor`, recomputes target and direction, and checks departure conditions.
+- If departure conditions are not met, `dwell` reloads to 1, creating a one-tick retry loop.
+
+## Sub-floor Rendering
+
+The binary renders car positions with sub-floor (pixel-level) smoothness using `settle` as an animation offset. One floor equals 36 pixels in the original game.
+
+Pixel Y formula (from `get_car_prev_rect`):
+
+```
+pixel_Y = (topFloor - curFloor) * 36 + direction_sign * settle * 6
+```
+
+where `direction_sign` is `+1` when going up, `-1` when going down.
+
+Because `settle` counts from 5 down to 0 at mode 0 (or 2 down to 0 at mode 1), the car animates 30 px (or 12 px) of sub-floor travel after each integer floor step. Modes 2 and 3 never set `settle`, so they produce instant floor jumps with no animation.
+
+The renderer is only called when the dirty flag (`iRam128839a4`) is set. Branch C in the state machine sets this flag every tick that `settle > 0`, and `advance_car_position_one_step` also sets it when the floor changes. Animation is therefore strictly sim-tick-driven — one rendered frame per game tick.
+
+**TS port note**: `LOCAL_TICKS_PER_FLOOR = 8` and `EXPRESS_TICKS_PER_FLOOR = 4` in `gameSceneConstants.ts` do not match the binary values (6 / 3 ticks per floor for modes 0/1, and 1/3 ticks per floor for mode 3). The TS client interpolates car position client-side rather than replaying the original pixel formula.
+
+## Queue-Full Retry Behavior
+
+When an entity encounters a full queue (40 entries) at its source floor:
+
+- the route resolver returns the queue-full waiting result with a 5-tick delay
+- the entity enters a waiting state and is re-evaluated after the 300-tick queued-leg timeout
+- there is no retry counter or maximum retry limit — the timeout is the only gate
+- when the timeout fires, the entity re-dispatches through its full family route logic, which re-runs `select_best_route_candidate` from scratch
+- this re-dispatch can select an alternate carrier if another one serves the same floor pair at lower cost, or fall back to stair/escalator links
+- the entity does not remember which carrier it previously tried; the cost function naturally penalizes full queues via the `+1000` / `+6000` surcharges
+
+## Slot Limits
+
+- maximum carriers: 24
+- maximum cars per carrier: 8
+- per-floor queue capacity per direction: 40
+- per-car physical slot storage: 42
+
+Standard and Service elevators only use 21 logical passenger-assignment slots because of their lower assignment capacity.

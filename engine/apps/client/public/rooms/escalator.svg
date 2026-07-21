@@ -1,0 +1,24 @@
+<svg preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" width="240" height="160">
+  <defs>
+    <linearGradient id="escBody" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#b4c0aa"/>
+      <stop offset="100%" stop-color="#dce5d1"/>
+    </linearGradient>
+  </defs>
+
+  <path
+    d="M0 120H24L216 0H240V40H216L24 160H0Z"
+    fill="url(#escBody)"
+    stroke="#2d3a2a"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+
+  <g stroke="#3d4d37" stroke-width="1.25" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M42 131L48 125L54 131" />
+    <path d="M74 111L80 105L86 111" />
+    <path d="M106 91L112 85L118 91" />
+    <path d="M138 71L144 65L150 71" />
+    <path d="M170 51L176 45L182 51" />
+  </g>
+</svg>

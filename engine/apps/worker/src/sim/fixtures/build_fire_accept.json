@@ -1,0 +1,48 @@
+{
+	"floor_extent": {
+		"0": { "left": 80, "right": 140 },
+		"1": { "left": 80, "right": 140 },
+		"2": { "left": 80, "right": 140 },
+		"3": { "left": 80, "right": 140 },
+		"4": { "left": 80, "right": 140 },
+		"5": { "left": 80, "right": 140 },
+		"6": { "left": 80, "right": 140 },
+		"7": { "left": 80, "right": 140 },
+		"8": { "left": 80, "right": 140 },
+		"9": { "left": 80, "right": 140 },
+		"10": { "left": 80, "right": 140 },
+		"11": { "left": 80, "right": 140 },
+		"12": { "left": 80, "right": 140 },
+		"13": { "left": 80, "right": 140 }
+	},
+	"facilities": [
+		{ "type": "security", "floor": 1, "left": 90 },
+		{ "type": "office", "floor": 11, "left": 100 },
+		{ "type": "office", "floor": 11, "left": 109 },
+		{ "type": "office", "floor": 11, "left": 118 },
+		{ "type": "office", "floor": 12, "left": 100 },
+		{ "type": "office", "floor": 12, "left": 109 },
+		{ "type": "office", "floor": 12, "left": 118 },
+		{ "type": "office", "floor": 13, "left": 100 },
+		{ "type": "office", "floor": 13, "left": 109 },
+		{ "type": "office", "floor": 13, "left": 118 },
+		{ "type": "elevator", "bottom": 0, "top": 13, "left": 130, "cars": 2 }
+	],
+	"config": {
+		"dumpInterval": 50,
+		"maxTicks": 3500,
+		"startDay": 83,
+		"startDayTick": 0,
+		"overrides": {
+			"starCount": 3,
+			"cashBalance": 5000000,
+			"daypartIndex": 0,
+			"evalEntityIdx": -1,
+			"securityCount": 1
+		},
+		"prompts": {
+			"fireRescue": "accept"
+		},
+		"forceFire": true
+	}
+}

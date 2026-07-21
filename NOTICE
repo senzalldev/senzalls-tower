@@ -1,0 +1,7 @@
+Senzall's Tower bundles the game engine from tower-together
+(https://github.com/phulin/tower-together), a clean-room MIT-licensed
+reimplementation (c) 2026 Patrick Hulin. See third_party/tower-together-LICENSE.md.
+
+No original SimTower / Yoot Tower / The Tower assets or code are included.
+"SimTower" and "Yoot Tower" are trademarks of their respective owners and are
+used here only descriptively; Senzall's Tower is an independent product.

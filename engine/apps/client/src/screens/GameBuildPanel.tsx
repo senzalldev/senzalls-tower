@@ -1,0 +1,354 @@
+import {
+	ArrowUpDown,
+	Bed,
+	BedDouble,
+	Briefcase,
+	Car,
+	CarFront,
+	ChevronsUpDown,
+	Crown,
+	DoorOpen,
+	Eraser,
+	Film,
+	Hammer,
+	Home,
+	type LucideIcon,
+	MoveUpRight,
+	PartyPopper,
+	Pizza,
+	Recycle,
+	Search,
+	Shield,
+	ShoppingBag,
+	Sparkles,
+	Square,
+	TramFront,
+	UtensilsCrossed,
+	X,
+} from "lucide-react";
+import { memo, useCallback, useEffect, useState } from "react";
+import type { SelectedTool } from "../types";
+import { getTileStarRequirement, TILE_COSTS } from "../types";
+import { gameScreenStyles as styles } from "./gameScreenStyles";
+
+interface ToolEntry {
+	id: SelectedTool;
+	label: string;
+	color: string;
+	cost: number;
+	Icon: LucideIcon;
+}
+
+const CATEGORIES: ToolEntry[][] = [
+	[
+		{
+			id: "lobby",
+			label: "Lobby",
+			color: "#c9a77a",
+			cost: TILE_COSTS.lobby,
+			Icon: DoorOpen,
+		},
+		{
+			id: "stairs",
+			label: "Stairs",
+			color: "#e8d5a3",
+			cost: TILE_COSTS.stairs,
+			Icon: ChevronsUpDown,
+		},
+		{
+			id: "escalator",
+			label: "Escalator",
+			color: "#c0a0d0",
+			cost: TILE_COSTS.escalator,
+			Icon: MoveUpRight,
+		},
+	],
+	[
+		{
+			id: "elevator",
+			label: "Elevator",
+			color: "#a0a0e0",
+			cost: TILE_COSTS.elevator,
+			Icon: ArrowUpDown,
+		},
+		{
+			id: "elevatorExpress",
+			label: "Express",
+			color: "#8080e0",
+			cost: TILE_COSTS.elevatorExpress,
+			Icon: ArrowUpDown,
+		},
+		{
+			id: "elevatorService",
+			label: "Service",
+			color: "#a0b0d0",
+			cost: TILE_COSTS.elevatorService,
+			Icon: ArrowUpDown,
+		},
+	],
+	[
+		{
+			id: "office",
+			label: "Office",
+			color: "#a8b7c4",
+			cost: TILE_COSTS.office,
+			Icon: Briefcase,
+		},
+		{
+			id: "condo",
+			label: "Condo",
+			color: "#e7cf6b",
+			cost: TILE_COSTS.condo,
+			Icon: Home,
+		},
+	],
+	[
+		{
+			id: "hotelSingle",
+			label: "Single",
+			color: "#f28b82",
+			cost: TILE_COSTS.hotelSingle,
+			Icon: Bed,
+		},
+		{
+			id: "hotelTwin",
+			label: "Twin",
+			color: "#e35d5b",
+			cost: TILE_COSTS.hotelTwin,
+			Icon: BedDouble,
+		},
+		{
+			id: "hotelSuite",
+			label: "Suite",
+			color: "#b63c3c",
+			cost: TILE_COSTS.hotelSuite,
+			Icon: Crown,
+		},
+		{
+			id: "housekeeping",
+			label: "Housekeeping",
+			color: "#d0b0e0",
+			cost: TILE_COSTS.housekeeping,
+			Icon: Sparkles,
+		},
+	],
+	[
+		{
+			id: "fastFood",
+			label: "Fast Food",
+			color: "#f2b24d",
+			cost: TILE_COSTS.fastFood,
+			Icon: Pizza,
+		},
+		{
+			id: "restaurant",
+			label: "Restaurant",
+			color: "#e58a3a",
+			cost: TILE_COSTS.restaurant,
+			Icon: UtensilsCrossed,
+		},
+		{
+			id: "retail",
+			label: "Retail",
+			color: "#a0c040",
+			cost: TILE_COSTS.retail,
+			Icon: ShoppingBag,
+		},
+	],
+	[
+		{
+			id: "cinema",
+			label: "Cinema",
+			color: "#c040a0",
+			cost: TILE_COSTS.cinema,
+			Icon: Film,
+		},
+		{
+			id: "partyHall",
+			label: "Party Hall",
+			color: "#d96fb8",
+			cost: TILE_COSTS.partyHall,
+			Icon: PartyPopper,
+		},
+	],
+	[
+		{
+			id: "security",
+			label: "Security",
+			color: "#3050a0",
+			cost: TILE_COSTS.security,
+			Icon: Shield,
+		},
+		{
+			id: "recyclingCenter",
+			label: "Recycling",
+			color: "#c04040",
+			cost: TILE_COSTS.recyclingCenter,
+			Icon: Recycle,
+		},
+		{
+			id: "parking",
+			label: "Parking",
+			color: "#8fa0b0",
+			cost: TILE_COSTS.parking,
+			Icon: Car,
+		},
+		{
+			id: "parkingRamp",
+			label: "Parking Ramp",
+			color: "#5a6878",
+			cost: TILE_COSTS.parkingRamp,
+			Icon: CarFront,
+		},
+		{
+			id: "metro",
+			label: "Metro",
+			color: "#60c0c0",
+			cost: TILE_COSTS.metro,
+			Icon: TramFront,
+		},
+	],
+	[
+		{
+			id: "inspect",
+			label: "Inspect",
+			color: "#5bc0de",
+			cost: 0,
+			Icon: Search,
+		},
+		{
+			id: "floor",
+			label: "Floor",
+			color: "#777",
+			cost: TILE_COSTS.floor,
+			Icon: Square,
+		},
+		{ id: "empty", label: "Erase", color: "#888", cost: 0, Icon: Eraser },
+	],
+];
+
+interface Props {
+	starCount: number;
+	freeBuild: boolean;
+	selectedTool: SelectedTool;
+	onToolSelect: (tool: SelectedTool) => void;
+}
+
+const COMPACT_QUERY = "(max-width: 720px)";
+
+export const GameBuildPanel = memo(function GameBuildPanel({
+	starCount,
+	freeBuild,
+	selectedTool,
+	onToolSelect,
+}: Props) {
+	const [isCompact, setIsCompact] = useState(() =>
+		typeof window === "undefined"
+			? false
+			: window.matchMedia(COMPACT_QUERY).matches,
+	);
+	const [isOpen, setIsOpen] = useState(false);
+
+	useEffect(() => {
+		const mql = window.matchMedia(COMPACT_QUERY);
+		const handler = (e: MediaQueryListEvent) => {
+			setIsCompact(e.matches);
+			if (!e.matches) setIsOpen(false);
+		};
+		mql.addEventListener("change", handler);
+		return () => mql.removeEventListener("change", handler);
+	}, []);
+
+	const handleToolSelect = useCallback(
+		(tool: SelectedTool) => {
+			onToolSelect(tool);
+			if (window.matchMedia(COMPACT_QUERY).matches) setIsOpen(false);
+		},
+		[onToolSelect],
+	);
+
+	const visibleCategories = CATEGORIES.map((tools) =>
+		tools.filter((tool) => {
+			if (freeBuild || tool.id === "empty" || tool.id === "inspect")
+				return true;
+			return starCount >= getTileStarRequirement(tool.id);
+		}),
+	).filter((tools) => tools.length > 0);
+
+	const hidden = isCompact && !isOpen;
+
+	return (
+		<>
+			{hidden && (
+				<button
+					type="button"
+					style={styles.buildTrayHandle}
+					onClick={() => setIsOpen(true)}
+					aria-label="Open build panel"
+				>
+					<Hammer size={14} strokeWidth={1.8} />
+					<span>Build</span>
+				</button>
+			)}
+			<div
+				style={{
+					...styles.buildPanel,
+					...(hidden ? styles.buildPanelHidden : {}),
+				}}
+				aria-hidden={hidden}
+			>
+				<div style={styles.buildPanelHeader}>
+					<div style={styles.debugTitle}>Build</div>
+					{isCompact && (
+						<button
+							type="button"
+							style={styles.buildPanelClose}
+							onClick={() => setIsOpen(false)}
+							aria-label="Hide build panel"
+						>
+							<X size={14} strokeWidth={1.8} />
+						</button>
+					)}
+				</div>
+				{visibleCategories.map((tools, categoryIndex) => (
+					<div
+						key={tools[0].id}
+						style={{
+							...styles.buildGrid,
+							...(categoryIndex > 0 ? { marginTop: 2 } : {}),
+						}}
+					>
+						{tools.map((tool) => {
+							const active = selectedTool === tool.id;
+							return (
+								<button
+									key={tool.id}
+									type="button"
+									title={
+										tool.cost > 0
+											? `${tool.label} — $${tool.cost.toLocaleString()}`
+											: tool.label
+									}
+									style={{
+										...styles.buildBtn,
+										borderColor: active
+											? tool.color
+											: "rgba(123, 148, 170, 0.25)",
+										background: active
+											? `${tool.color}22`
+											: "rgba(255, 255, 255, 0.02)",
+										color: active ? tool.color : "#aab8c2",
+									}}
+									onClick={() => handleToolSelect(tool.id)}
+								>
+									<tool.Icon size={16} strokeWidth={1.8} />
+									<span style={styles.buildBtnLabel}>{tool.label}</span>
+								</button>
+							);
+						})}
+					</div>
+				))}
+			</div>
+		</>
+	);
+});
