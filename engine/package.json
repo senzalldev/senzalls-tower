@@ -7,10 +7,10 @@
 		"apps/*"
 	],
 	"scripts": {
-		"dev": "turbo dev",
-		"build": "turbo build",
-		"typecheck": "turbo typecheck",
-		"deploy": "turbo build && turbo deploy"
+		"dev": "npm --workspace apps/client run dev",
+		"build": "npm --workspace apps/client run build",
+		"typecheck": "cd apps/client && npx tsc --noEmit",
+		"test": "npm --workspace apps/worker run test"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.10",
