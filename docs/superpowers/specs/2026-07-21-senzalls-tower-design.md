@@ -145,6 +145,26 @@ swapped.
   driven through the `Bridge`.
 - Window frame + last session persisted via `NSWindow` autosave + `UserDefaults`.
 
+## 4.4 Personalization: "Senzall" the VIP
+
+The engine already models VIPs — a binary-verified VIP visitor event
+(`sim/events.ts: tickVipSpecialVisitor`) and VIP-designated hotel suites
+(`vipFlag` on records, `world.gateFlags.vipSuiteFloor`). Per user request, the
+tower's VIP is named **"Senzall."**
+
+This is implemented **purely in the presentation layer** (client UI + local
+notification/label mapping), **not** in the sim, so the tick-accurate
+deterministic simulation and its tests remain untouched:
+
+- When the sim emits a VIP-related notification (or a guest occupies the VIP
+  suite / a record carries `vipFlag`), the client labels that guest **"Senzall"**
+  in the toast (e.g. "Senzall (VIP) has arrived") and in the cell-inspection
+  dialog.
+- The name lives in a small client-side constant/label map (e.g.
+  `engine/local/vip.ts` → `VIP_NAME = "Senzall"`), trivially changeable later.
+- No change to RNG, ticks, snapshots, or command handling — determinism
+  preserved.
+
 ## 5. Signing & notarization pipeline
 
 `make dmg` runs, in order:
