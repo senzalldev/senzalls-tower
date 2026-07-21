@@ -191,34 +191,38 @@ its tests remain untouched:
 
 ## 5. Signing & notarization pipeline
 
-`make dmg` runs, in order:
+**This mirrors the proven pattern in `~/dev/pounceterm/release.sh`** (itself a
+signed, notarized webview-shell app on the same machine/identity). A single
+`release.sh` at the repo root drives it, honoring `DRY_RUN` (build+sign+DMG, no
+notarize) and `SKIP_PUBLISH` conventions, with a `VERSION` file.
 
-1. `build-engine.sh` — `npm ci` + `vite build` → `engine/dist/`.
-2. `make-app.sh` — assemble `Senzall's Tower.app`, copy `engine/dist` into
-   `Contents/Resources/engine/`, set Info.plist (bundle id
-   `com.sparks.SenzallsTower`, version, category, min macOS).
-3. `sign.sh` — `codesign --deep --options runtime --entitlements … --sign
-   "Developer ID Application: Steven Scott Sparks (DF8R99VKQL)"` (sign nested
-   frameworks/helpers first, then the app).
-4. `notarize.sh` — zip the app, `xcrun notarytool submit --wait` using a
-   Keychain profile (created once from an **app-specific password** or an App
-   Store Connect API key), then `xcrun stapler staple` the app.
-5. `make-dmg.sh` — build `Senzall's Tower.dmg` (background + Applications
-   symlink), codesign the DMG, notarize + staple the DMG.
-6. `verify.sh` — assert `codesign --verify --deep --strict`, `spctl -a -t exec`
-   (app) and `spctl -a -t open --context context:primary-signature` (DMG) both
-   pass ("accepted").
+Credentials are **already in the user's Keychain** — no one-time setup:
+- Notary Keychain profile: **`apple-notary`** (overridable via `NOTARY_PROFILE`).
+- Sign identity: `Developer ID Application: Steven Scott Sparks (DF8R99VKQL)`.
 
-**Entitlements:** hardened runtime enabled; **no** network entitlement; JIT only
-if WKWebView requires it (`com.apple.security.cs.allow-jit` — verify need). App
-Sandbox optional (not required for Developer ID); if enabled, add
-user-selected-file read/write for save export only.
+`./release.sh` runs, in order (matching pounceterm):
 
-**Credentials the user must provide once** (documented in README):
-- An **app-specific password** for the Apple ID (appleid.apple.com → Sign-In &
-  Security → App-Specific Passwords), OR an App Store Connect API key.
-- Stored via `xcrun notarytool store-credentials "senzall-notary"` into the
-  login Keychain. **Never committed.** Team ID `DF8R99VKQL`.
+1. **Build engine** — `npm ci` + `VITE_LOCAL=1 vite build` → embed into
+   `SenzallsTower.app/Contents/Resources/engine/`.
+2. **Build app** — `xcodebuild` Release → `SenzallsTower.app`.
+3. **Codesign** — `codesign --deep --force --options runtime --entitlements
+   "$ENTITLEMENTS" --sign "$SIGN_ID" --timestamp "$APP"` then
+   `codesign --verify --deep --strict "$APP"`.
+4. **DMG** — headless-safe `hdiutil create ... -format UDZO` from a stage dir
+   (`App.app` + `/Applications` symlink); then `codesign --sign "$SIGN_ID"
+   --timestamp "$DMG"`.
+5. **Notarize + staple** — `ditto -c -k --keepParent "$APP" app.zip`;
+   `xcrun notarytool submit app.zip --keychain-profile "$NOTARY_PROFILE" --wait`;
+   `xcrun stapler staple "$APP"`; then the same submit+staple for the DMG;
+   `spctl --assess --type open --context context:primary-signature -v "$DMG"`.
+6. (Optional, `SKIP_PUBLISH` default-on for this game) GitHub release / Homebrew
+   cask — mirrors pounceterm but **off by default**; the deliverable is the
+   shareable `.dmg`.
+
+**Entitlements:** hardened runtime enabled; **no** network entitlement; add
+`com.apple.security.cs.allow-jit` only if WKWebView's JSC requires it under
+hardened runtime (verify during Task 6). App Sandbox not required for Developer
+ID distribution.
 
 ## 6. Testing & verification
 

@@ -782,115 +782,107 @@ git add -A && git commit -m "packaging: build engine + assemble runnable app (un
 
 ## Phase 5 — Sign, notarize, DMG
 
-### Task 10: Codesign, notarize, staple, and package the DMG
+### Task 10: release.sh — sign, notarize, staple, DMG (mirrors pounceterm)
 
 **Files:**
-- Create: `packaging/sign.sh`, `packaging/notarize.sh`, `packaging/make-dmg.sh`, `packaging/verify.sh`, `README.md`
-- Modify: `Makefile` (add `dmg`, `verify`)
+- Create: `release.sh` (repo root), `VERSION`, `README.md`
+- Reference pattern: `~/dev/pounceterm/release.sh`
 
 **Interfaces:**
-- Consumes: `SenzallsTower.app` from Task 9; a Keychain notary profile `senzall-notary`.
-- Produces: a notarized, stapled `Senzall's Tower.dmg` that passes Gatekeeper on a clean Mac.
+- Consumes: `packaging/build-engine.sh` + `packaging/make-app.sh` (Task 9) to produce `SenzallsTower.app`; the **already-present** Keychain notary profile `apple-notary`.
+- Produces: a signed, notarized, stapled `release/Senzall's Tower-<version>.dmg` that passes Gatekeeper on a clean Mac. Honors `DRY_RUN=1` (stop before notarize) and `SKIP_PUBLISH` (default-on; publishing is out of scope for v1).
 
-- [ ] **Step 1: Document the one-time credential setup in README**
+- [ ] **Step 1: Create VERSION**
 
-`README.md` must instruct the user to create an app-specific password (appleid.apple.com → Sign-In & Security → App-Specific Passwords) and store it once:
 ```bash
-xcrun notarytool store-credentials "senzall-notary" \
-  --apple-id "stevesparks@wustl.edu" --team-id "DF8R99VKQL"
-# paste the app-specific password when prompted
-```
-State clearly: the password is stored in the login Keychain and is **never** committed.
-
-- [ ] **Step 2: sign.sh**
-
-`packaging/sign.sh`:
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-APP="$1"; ID="Developer ID Application: Steven Scott Sparks (DF8R99VKQL)"
-ENT="$(cd "$(dirname "$0")/.." && pwd)/app/SenzallsTower/SenzallsTower.entitlements"
-# Sign nested code first, then the app bundle.
-find "$APP/Contents/Frameworks" -type f \( -name "*.dylib" -o -name "*.framework" \) 2>/dev/null -print0 | \
-  xargs -0 -I{} codesign --force --options runtime --timestamp --sign "$ID" {} || true
-codesign --force --deep --options runtime --timestamp \
-  --entitlements "$ENT" --sign "$ID" "$APP"
-codesign --verify --deep --strict --verbose=2 "$APP"
+cd /Users/steve/dev/simtower/senzalls-tower && printf '1.0.0' > VERSION
 ```
 
-- [ ] **Step 3: notarize.sh**
+- [ ] **Step 2: Write release.sh (same structure/flags as pounceterm)**
 
-`packaging/notarize.sh`:
+`release.sh`:
 ```bash
-#!/usr/bin/env bash
+#!/bin/bash
+# release.sh — local one-shot release for Senzall's Tower.
+# Build engine + app → sign → DMG → notarize → staple.
+# Mirrors ~/dev/pounceterm/release.sh (same identity + notary profile).
+#
+#   ./release.sh                 # version from VERSION file
+#   ./release.sh 1.0.1           # override + rewrite VERSION
+#   DRY_RUN=1 ./release.sh       # build + sign + DMG only (no notarize)
 set -euo pipefail
-APP="$1"; ZIP="${APP%.app}.zip"
-ditto -c -k --keepParent "$APP" "$ZIP"
-xcrun notarytool submit "$ZIP" --keychain-profile "senzall-notary" --wait
+cd "$(dirname "$0")"
+
+VERSION="${1:-$(tr -d '[:space:]' < VERSION)}"
+printf '%s' "$VERSION" > VERSION
+NOTARY_PROFILE="${NOTARY_PROFILE:-apple-notary}"
+SIGN_ID="Developer ID Application: Steven Scott Sparks (DF8R99VKQL)"
+ENTITLEMENTS="app/SenzallsTower/SenzallsTower.entitlements"
+DMG_NAME="Senzall's Tower-${VERSION}.dmg"
+DMG_PATH="release/${DMG_NAME}"
+
+echo "▸ Senzall's Tower ${VERSION}"
+
+# 1. build engine + app (Task 9 scripts). make-app.sh prints APP=<path>.
+./packaging/build-engine.sh
+APP="$(./packaging/make-app.sh | sed -n 's/^APP=//p' | tail -1)"
+[ -d "$APP" ] || { echo "app build failed"; exit 1; }
+
+# 2. codesign (hardened runtime + entitlements) — pounceterm pattern
+codesign --deep --force --options runtime --entitlements "$ENTITLEMENTS" \
+    --sign "$SIGN_ID" --timestamp "$APP"
+codesign --verify --deep --strict "$APP"
+echo "✓ signed"
+
+# 3. DMG (headless-safe hdiutil: app + /Applications symlink)
+mkdir -p release
+STAGE="$(mktemp -d)"; cp -R "$APP" "$STAGE/SenzallsTower.app"; ln -s /Applications "$STAGE/Applications"
+rm -f "$DMG_PATH"
+hdiutil create -volname "Senzall's Tower ${VERSION}" -srcfolder "$STAGE" -ov -format UDZO "$DMG_PATH"
+rm -rf "$STAGE"
+codesign --sign "$SIGN_ID" --timestamp "$DMG_PATH"
+echo "✓ DMG: $DMG_PATH"
+
+[ "${DRY_RUN:-0}" = "1" ] && { echo "DRY_RUN — stop before notarize"; exit 0; }
+
+# 4. notarize app + DMG, staple
+ZIP="$(mktemp -d)/SenzallsTower.zip"; ditto -c -k --keepParent "$APP" "$ZIP"
+xcrun notarytool submit "$ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
 xcrun stapler staple "$APP"
-rm -f "$ZIP"
+xcrun notarytool submit "$DMG_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
+xcrun stapler staple "$DMG_PATH"
+spctl --assess --type open --context context:primary-signature -v "$DMG_PATH" || true
+echo "✓ notarized + stapled: $DMG_PATH"
 ```
 
-- [ ] **Step 4: make-dmg.sh**
-
-`packaging/make-dmg.sh` (uses `create-dmg` if present, else `hdiutil`):
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-APP="$1"; OUT="$(cd "$(dirname "$0")/.." && pwd)/build/Senzall's Tower.dmg"
-ID="Developer ID Application: Steven Scott Sparks (DF8R99VKQL)"
-rm -f "$OUT"
-if command -v create-dmg >/dev/null; then
-  create-dmg --volname "Senzall's Tower" --app-drop-link 450 160 \
-    --icon "SenzallsTower.app" 150 160 "$OUT" "$APP"
-else
-  STAGE="$(mktemp -d)"; cp -R "$APP" "$STAGE/"; ln -s /Applications "$STAGE/Applications"
-  hdiutil create -volname "Senzall's Tower" -srcfolder "$STAGE" -ov -format UDZO "$OUT"
-fi
-codesign --force --sign "$ID" "$OUT"
-xcrun notarytool submit "$OUT" --keychain-profile "senzall-notary" --wait
-xcrun stapler staple "$OUT"
-echo "DMG=$OUT"
-```
-
-- [ ] **Step 5: verify.sh + Makefile targets**
-
-`packaging/verify.sh`:
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-APP="$1"; DMG="$2"
-codesign --verify --deep --strict --verbose=2 "$APP"
-spctl -a -t exec -vv "$APP"
-spctl -a -t open --context context:primary-signature -vv "$DMG"
-echo "Gatekeeper: accepted"
-```
-Add to `Makefile`:
-```make
-.PHONY: dmg verify
-dmg: app
-	APP=$$(./packaging/make-app.sh | sed -n 's/^APP=//p' | tail -1); \
-	./packaging/sign.sh "$$APP"; ./packaging/notarize.sh "$$APP"; \
-	./packaging/make-dmg.sh "$$APP"
-verify:
-	APP=build/DerivedData/Build/Products/Release/SenzallsTower.app; \
-	./packaging/verify.sh "$$APP" "build/Senzall's Tower.dmg"
-```
-
-- [ ] **Step 6: Run the full pipeline and verify Gatekeeper**
+- [ ] **Step 3: DRY_RUN smoke (sign + DMG, no notarize)**
 
 Run:
 ```bash
-chmod +x packaging/*.sh
-make dmg
-make verify
+chmod +x release.sh
+DRY_RUN=1 ./release.sh
+codesign --verify --deep --strict "release" 2>/dev/null || true
 ```
-Expected: notarization returns `status: Accepted`; `spctl` reports `accepted` for both app and DMG. Definition of done: opening the stapled DMG on a Mac with no dev tools shows no Gatekeeper warning and the game is playable offline.
+Expected: `✓ signed`, `✓ DMG: release/Senzall's Tower-1.0.0.dmg`, and the DMG exists. `codesign --verify` on the `.app` passes. (If hardened runtime rejects WKWebView's JSC, add `com.apple.security.cs.allow-jit` to entitlements per Task 6 Step 3 and re-run.)
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 4: Full release + Gatekeeper verification**
+
+Run:
+```bash
+./release.sh
+spctl -a -t exec -vv "$(./packaging/make-app.sh | sed -n 's/^APP=//p' | tail -1)"
+spctl -a -t open --context context:primary-signature -vv "release/Senzall's Tower-1.0.0.dmg"
+```
+Expected: notarization returns `status: Accepted` for both app and DMG; `spctl` reports `accepted`. Definition of done: opening the stapled DMG on a Mac with no dev tools shows no Gatekeeper warning and the game is playable offline.
+
+- [ ] **Step 5: Write README (build + release instructions)**
+
+`README.md` documents: `make app` for a local unsigned build, `./release.sh` for the signed/notarized DMG (notes the `apple-notary` Keychain profile is required and already present on the author's machine), the offline single-player nature, the Senzall VIP roster, and the tower-together MIT attribution (link + `NOTICE`).
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add -A && git commit -m "packaging: sign + notarize + DMG + Gatekeeper verify"
+git add -A && git commit -m "packaging: release.sh (sign+notarize+DMG) mirroring pounceterm"
 ```
 
 ---
