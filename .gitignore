@@ -1,0 +1,9 @@
+node_modules/
+engine/dist/
+dist/
+build/
+*.dmg
+*.zip
+DerivedData/
+.DS_Store
+*.xcuserstate
