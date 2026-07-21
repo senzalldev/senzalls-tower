@@ -13,6 +13,7 @@
 		4093CAA94459712FDA417DC4 /* SaveStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D3E86B64C2B89193A48DFD5 /* SaveStoreTests.swift */; };
 		74AA5FA41CB400988A8E6A34 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C820376C60777DBFB59C0143 /* Assets.xcassets */; };
 		B44E02B04E293DE966994868 /* GameWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1F4285D21202326752F99B2 /* GameWebView.swift */; };
+		C37DB07788EE521F58C663E7 /* AppMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = D26E45062A57F155BA3C1AE1 /* AppMenu.swift */; };
 		C8B6B73FF2F037CEF037A5D0 /* SenzallsTowerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B647A6D41E7D74E6B01305D /* SenzallsTowerApp.swift */; };
 /* End PBXBuildFile section */
 
@@ -26,6 +27,7 @@
 		BBD8DE461D1A1E8892484A31 /* Bridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bridge.swift; sourceTree = "<group>"; };
 		C1F4285D21202326752F99B2 /* GameWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameWebView.swift; sourceTree = "<group>"; };
 		C820376C60777DBFB59C0143 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D26E45062A57F155BA3C1AE1 /* AppMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMenu.swift; sourceTree = "<group>"; };
 		F39BA44E59EC032005BEB556 /* SenzallsTowerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SenzallsTowerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -50,6 +52,7 @@
 		92CE7688C272007DEAB2768A /* SenzallsTower */ = {
 			isa = PBXGroup;
 			children = (
+				D26E45062A57F155BA3C1AE1 /* AppMenu.swift */,
 				C820376C60777DBFB59C0143 /* Assets.xcassets */,
 				BBD8DE461D1A1E8892484A31 /* Bridge.swift */,
 				C1F4285D21202326752F99B2 /* GameWebView.swift */,
@@ -170,6 +173,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C37DB07788EE521F58C663E7 /* AppMenu.swift in Sources */,
 				143B057AB0AC8561B425A555 /* Bridge.swift in Sources */,
 				B44E02B04E293DE966994868 /* GameWebView.swift in Sources */,
 				289AB04F0065433608A51381 /* SaveStore.swift in Sources */,

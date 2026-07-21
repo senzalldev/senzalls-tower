@@ -9,7 +9,24 @@ import WebKit
 final class Bridge: NSObject, WKScriptMessageHandler {
     static let messageName = "senzall"
 
-    weak var webView: WKWebView?
+    weak var webView: WKWebView? {
+        didSet { observeMenuActions() }
+    }
+
+    private var menuObserver: NSObjectProtocol?
+
+    private func observeMenuActions() {
+        if let existing = menuObserver {
+            NotificationCenter.default.removeObserver(existing)
+        }
+        menuObserver = NotificationCenter.default.addObserver(
+            forName: .senzallMenuAction, object: nil, queue: .main
+        ) { [weak self] note in
+            if let action = note.object as? String {
+                self?.sendMenuAction(action)
+            }
+        }
+    }
 
     func userContentController(
         _ controller: WKUserContentController,

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { SimSnapshot } from "../../worker/src/sim/index";
 import { type GameSocket, TowerSocket } from "./lib/socket";
 import { getDisplayName, getPlayerId } from "./lib/storage";
+import type { LocalTowerSocket } from "./local/LocalTowerSocket";
 import {
 	createLocalSocket,
 	IS_LOCAL,
@@ -8,6 +10,7 @@ import {
 	LOCAL_PLAYER_NAME,
 	LOCAL_TOWER_ID,
 } from "./local/localBootstrap";
+import { senzall } from "./local/nativeBridge";
 import { GameScreen } from "./screens/GameScreen";
 import { GuestScreen } from "./screens/GuestScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";
@@ -62,6 +65,9 @@ export function App() {
 	const [initialTool, setInitialTool] = useState<SelectedTool | undefined>(
 		undefined,
 	);
+	// Local single-player only: bump to force a fresh GameScreen/session (New/Load).
+	const [sessionKey, setSessionKey] = useState(0);
+	const pausedRef = useRef(false);
 
 	const enterTower = useCallback(
 		(
@@ -77,6 +83,19 @@ export function App() {
 		},
 		[socket],
 	);
+
+	// Local single-player: (re)start a session, optionally from a saved snapshot.
+	const startLocalSession = useCallback((snapshot?: SimSnapshot | null) => {
+		socketRef.current.disconnect();
+		socketRef.current = createLocalSocket(snapshot);
+		pausedRef.current = false;
+		setPlayerId(LOCAL_PLAYER_ID);
+		setDisplayName(LOCAL_PLAYER_NAME);
+		socketRef.current.connect(LOCAL_TOWER_ID);
+		setTowerId(LOCAL_TOWER_ID);
+		setScreen("game");
+		setSessionKey((key) => key + 1);
+	}, []);
 
 	const moveToLobby = useCallback(
 		(historyMode: HistoryMode = "none") => {
@@ -123,12 +142,67 @@ export function App() {
 
 	useEffect(() => {
 		if (IS_LOCAL) {
-			// Offline single-player: no guest/lobby, straight into the local tower.
-			setPlayerId(LOCAL_PLAYER_ID);
-			setDisplayName(LOCAL_PLAYER_NAME);
-			enterTower(LOCAL_TOWER_ID);
+			// Offline single-player: skip guest/lobby, resume the autosave if any.
+			let cancelled = false;
+			void senzall.load("autosave").then((saved) => {
+				if (cancelled) return;
+				let snapshot: SimSnapshot | null = null;
+				if (saved) {
+					try {
+						snapshot = JSON.parse(saved) as SimSnapshot;
+					} catch {
+						snapshot = null;
+					}
+				}
+				startLocalSession(snapshot);
+			});
+
+			senzall.onMenu((action) => {
+				const active = socketRef.current;
+				switch (action) {
+					case "pause":
+						pausedRef.current = !pausedRef.current;
+						active.send({ type: "set_paused", paused: pausedRef.current });
+						break;
+					case "speed1":
+						active.send({ type: "set_speed", multiplier: 1 });
+						break;
+					case "speed3":
+						active.send({ type: "set_speed", multiplier: 3 });
+						break;
+					case "speed10":
+						active.send({ type: "set_speed", multiplier: 10 });
+						break;
+					case "save": {
+						const snap = (active as LocalTowerSocket).getSnapshot();
+						if (snap) void senzall.save("autosave", JSON.stringify(snap));
+						break;
+					}
+					case "newTower":
+						startLocalSession(null);
+						break;
+					case "load":
+						void senzall.load("autosave").then((saved) => {
+							if (!saved) return;
+							try {
+								startLocalSession(JSON.parse(saved) as SimSnapshot);
+							} catch {
+								// ignore corrupt save
+							}
+						});
+						break;
+				}
+			});
+
+			const autosaveTimer = setInterval(() => {
+				const snap = (socketRef.current as LocalTowerSocket).getSnapshot();
+				if (snap) void senzall.autosave(JSON.stringify(snap));
+			}, 60_000);
+
 			return () => {
-				socket.disconnect();
+				cancelled = true;
+				clearInterval(autosaveTimer);
+				socketRef.current.disconnect();
 			};
 		}
 
@@ -143,7 +217,7 @@ export function App() {
 		return () => {
 			socket.disconnect();
 		};
-	}, [socket, syncFromLocation, enterTower]);
+	}, [socket, syncFromLocation, startLocalSession]);
 
 	useEffect(() => {
 		function onPopState() {
@@ -193,9 +267,10 @@ export function App() {
 		case "game":
 			return (
 				<GameScreen
+					key={sessionKey}
 					playerId={playerId}
 					displayName={displayName}
-					socket={socket}
+					socket={socketRef.current}
 					towerId={towerId}
 					initialTool={initialTool}
 					onLeave={handleLeaveGame}

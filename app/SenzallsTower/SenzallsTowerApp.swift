@@ -10,5 +10,8 @@ struct SenzallsTowerApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
+        .commands {
+            SenzallCommands()
+        }
     }
 }
