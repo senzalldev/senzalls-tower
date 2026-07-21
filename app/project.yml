@@ -1,0 +1,46 @@
+name: SenzallsTower
+options:
+  bundleIdPrefix: com.sparks
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER: com.sparks.SenzallsTower
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: DF8R99VKQL
+    SWIFT_VERSION: "6.0"
+    ENABLE_HARDENED_RUNTIME: YES
+    PRODUCT_NAME: SenzallsTower
+targets:
+  SenzallsTower:
+    type: application
+    platform: macOS
+    sources:
+      - path: SenzallsTower
+    info:
+      path: SenzallsTower/Info.plist
+      properties:
+        CFBundleDisplayName: Senzall's Tower
+        CFBundleName: SenzallsTower
+        LSApplicationCategoryType: public.app-category.simulation-games
+        NSHumanReadableCopyright: "Includes tower-together (MIT, © 2026 Patrick Hulin). No original SimTower assets."
+        NSHighResolutionCapable: true
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: SenzallsTower/SenzallsTower.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        COMBINE_HIDPI_IMAGES: YES
+  SenzallsTowerTests:
+    type: bundle.unit-test
+    platform: macOS
+    # Host-less logic tests. The units under test are pure (no app-framework
+    # deps), so they are compiled directly into the bundle rather than
+    # @testable-importing the app — this avoids the app-module build collision.
+    sources:
+      - path: SenzallsTowerTests
+      - path: SenzallsTower/SaveStore.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sparks.SenzallsTowerTests
