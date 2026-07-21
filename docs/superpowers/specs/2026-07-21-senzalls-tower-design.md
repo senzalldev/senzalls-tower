@@ -145,25 +145,49 @@ swapped.
   driven through the `Bridge`.
 - Window frame + last session persisted via `NSWindow` autosave + `UserDefaults`.
 
-## 4.4 Personalization: "Senzall" the VIP
+## 4.4 Personalization: named VIP roster
 
 The engine already models VIPs — a binary-verified VIP visitor event
 (`sim/events.ts: tickVipSpecialVisitor`) and VIP-designated hotel suites
 (`vipFlag` on records, `world.gateFlags.vipSuiteFloor`). Per user request, the
-tower's VIP is named **"Senzall."**
+tower has a **roster of named VIPs, each with a unique characteristic**, that
+visit the tower.
 
-This is implemented **purely in the presentation layer** (client UI + local
-notification/label mapping), **not** in the sim, so the tick-accurate
-deterministic simulation and its tests remain untouched:
+Roster (order fixed; each has a distinct flavor characteristic surfaced in the
+UI — a title and a short quirk shown in the arrival toast and cell inspector):
 
-- When the sim emits a VIP-related notification (or a guest occupies the VIP
-  suite / a record carries `vipFlag`), the client labels that guest **"Senzall"**
-  in the toast (e.g. "Senzall (VIP) has arrived") and in the cell-inspection
-  dialog.
-- The name lives in a small client-side constant/label map (e.g.
-  `engine/local/vip.ts` → `VIP_NAME = "Senzall"`), trivially changeable later.
-- No change to RNG, ticks, snapshots, or command handling — determinism
-  preserved.
+| # | VIP | Characteristic (flavor) |
+|---|-----|-------------------------|
+| 1 | Senzall | The founder — always the first VIP to bless a new tower |
+| 2 | JetBlast | Arrives fast; demands express elevators |
+| 3 | Dawn | Early riser — visits at daybreak |
+| 4 | Anabella | Refined — rates hotel suites hardest |
+| 5 | Kathy | Foodie — heads straight for restaurants |
+| 6 | Andy | Deal-maker — loves busy office floors |
+| 7 | Nick | Night owl — turns up after dark |
+| 8 | Eric | Efficiency hawk — hates long elevator waits |
+| 9 | Josh | Crowd-pleaser — happiest in a packed lobby |
+| 10 | Stevie | Retail therapist — makes a beeline for shops |
+| 11 | Brian | Big spender — favors condos |
+| 12 | Dan | Closer — the VIP who signs off on 5-star status |
+
+Implemented **purely in the presentation layer** (client UI + local label
+mapping), **not** in the sim, so the tick-accurate deterministic simulation and
+its tests remain untouched:
+
+- VIP identity is chosen **deterministically** by a display-only counter
+  (number of VIP visits so far), cycling through the roster — Senzall first.
+  This counter is derived from existing sim state / notification order and
+  **never feeds back into RNG, ticks, or snapshots**.
+- On a VIP arrival notification (or a guest occupying a `vipFlag` suite), the
+  client shows e.g. `"Senzall (VIP) has arrived — the founder"` in the toast and
+  the VIP's name + characteristic in the cell-inspection dialog.
+- The roster lives in a single client-side data file
+  (`engine/apps/client/src/local/vips.ts`), trivially editable later.
+- The characteristics are **cosmetic flavor** (labels/toasts). Any that imply a
+  gameplay effect (e.g. "demands express elevators") are presentation-only in
+  v1; wiring them to sim behavior is explicitly out of scope for v1 to preserve
+  determinism, and noted as a possible later enhancement.
 
 ## 5. Signing & notarization pipeline
 
