@@ -54,7 +54,7 @@ locally, with the multiplayer/server layer removed.
 ## 3. Repository layout
 
 ```
-senzalls-tower/            (repo root: /Users/steve/dev/simtower)
+senzalls-tower/            (repo root: /Users/steve/dev/simtower/senzalls-tower)
 ├── app/                   Native macOS app (Swift)
 │   ├── SenzallsTower/      SwiftUI/AppKit sources
 │   │   ├── SenzallsTowerApp.swift   @main, app lifecycle
