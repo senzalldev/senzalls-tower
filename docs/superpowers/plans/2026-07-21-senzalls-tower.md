@@ -19,6 +19,14 @@
 - Engine is vendored from a **pinned commit** of `phulin/tower-together`; offline-only additions live under `engine/local/` behind a `VITE_LOCAL` flag, keeping upstream diffable.
 - "Senzall" is the VIP name — implemented in the presentation layer only; never alter sim determinism (RNG, ticks, snapshots, commands).
 - Node 20+, npm 10+.
+- **Persona separation (hard rule):** this is a **gaming** product under the
+  **`senzalldev`** persona and must **not** cross the `pounceapps` dev-tools
+  persona. Source repo: `senzalldev/senzalls-tower`. Homebrew tap:
+  `senzalldev/homebrew-tap` (`brew install --cask senzalldev/tap/senzalls-tower`).
+  Downloads: GitHub Release asset on `senzalldev/senzalls-tower`, linked from
+  senzall.com. The only shared element with pounceterm is the Apple codesign
+  identity (the author's single Developer ID cert) and the `apple-notary`
+  Keychain profile — invisible to players, not a branding link.
 
 ---
 
@@ -853,6 +861,48 @@ xcrun notarytool submit "$DMG_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
 xcrun stapler staple "$DMG_PATH"
 spctl --assess --type open --context context:primary-signature -v "$DMG_PATH" || true
 echo "✓ notarized + stapled: $DMG_PATH"
+
+[ "${SKIP_PUBLISH:-0}" = "1" ] && { echo "SKIP_PUBLISH — DMG ready at $DMG_PATH"; exit 0; }
+
+# 5. GitHub Release on senzalldev (gaming persona — NOT pounceapps)
+RELEASE_REPO="${RELEASE_REPO:-senzalldev/senzalls-tower}"
+TAP_REPO="${TAP_REPO:-senzalldev/homebrew-tap}"
+TAG="v${VERSION}"
+if gh release view "$TAG" --repo "$RELEASE_REPO" >/dev/null 2>&1; then
+  gh release upload "$TAG" "$DMG_PATH" --repo "$RELEASE_REPO" --clobber
+else
+  gh release create "$TAG" "$DMG_PATH" --repo "$RELEASE_REPO" \
+      --title "Senzall's Tower v${VERSION}" \
+      --notes "Senzall's Tower ${VERSION} — offline single-player tower sim. Download the DMG below or: brew install --cask senzalldev/tap/senzalls-tower"
+fi
+ASSET_URL="https://github.com/${RELEASE_REPO}/releases/download/${TAG}/$(basename "$DMG_PATH" | sed 's/ /%20/g')"
+echo "✓ published release ${TAG} to ${RELEASE_REPO}"
+
+# 6. Homebrew cask in senzalldev/homebrew-tap
+SHA256="$(shasum -a 256 "$DMG_PATH" | awk '{print $1}')"
+TAP_DIR="$(mktemp -d)"
+git clone --depth 1 "https://github.com/${TAP_REPO}.git" "$TAP_DIR"
+mkdir -p "$TAP_DIR/Casks"
+cat > "$TAP_DIR/Casks/senzalls-tower.rb" <<CASK
+cask "senzalls-tower" do
+  version "${VERSION}"
+  sha256 "${SHA256}"
+  url "${ASSET_URL}"
+  name "Senzall's Tower"
+  desc "Offline single-player tower-building simulation game"
+  homepage "https://senzall.com"
+  app "SenzallsTower.app"
+end
+CASK
+git -C "$TAP_DIR" add Casks/senzalls-tower.rb
+if git -C "$TAP_DIR" diff --cached --quiet; then
+  echo "= tap already at ${VERSION}"
+else
+  git -C "$TAP_DIR" commit -m "senzalls-tower: update to ${VERSION}"
+  git -C "$TAP_DIR" push
+  echo "✓ ${TAP_REPO} cask updated"
+fi
+echo "▸ Install:  brew install --cask senzalldev/tap/senzalls-tower"
 ```
 
 - [ ] **Step 3: DRY_RUN smoke (sign + DMG, no notarize)**
@@ -875,14 +925,26 @@ spctl -a -t open --context context:primary-signature -vv "release/Senzall's Towe
 ```
 Expected: notarization returns `status: Accepted` for both app and DMG; `spctl` reports `accepted`. Definition of done: opening the stapled DMG on a Mac with no dev tools shows no Gatekeeper warning and the game is playable offline.
 
-- [ ] **Step 5: Write README (build + release instructions)**
+- [ ] **Step 5: Publish prerequisites (one-time, senzalldev persona)**
 
-`README.md` documents: `make app` for a local unsigned build, `./release.sh` for the signed/notarized DMG (notes the `apple-notary` Keychain profile is required and already present on the author's machine), the offline single-player nature, the Senzall VIP roster, and the tower-together MIT attribution (link + `NOTICE`).
+Before the first publishing run, ensure these exist under the **senzalldev**
+GitHub account/org (kept separate from pounceapps) and that `gh auth status` has
+push access:
+```bash
+gh repo view senzalldev/senzalls-tower   >/dev/null 2>&1 || gh repo create senzalldev/senzalls-tower --public
+gh repo view senzalldev/homebrew-tap     >/dev/null 2>&1 || gh repo create senzalldev/homebrew-tap --public
+```
+senzall.com links to `https://github.com/senzalldev/senzalls-tower/releases/latest`.
+Verify install path after first publish: `brew install --cask senzalldev/tap/senzalls-tower`.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Write README (build + release instructions)**
+
+`README.md` documents: `make app` for a local unsigned build, `./release.sh` for the signed/notarized DMG + senzalldev publish (notes the `apple-notary` Keychain profile is required and already present on the author's machine, and that `SKIP_PUBLISH=1` builds without publishing), the `brew install --cask senzalldev/tap/senzalls-tower` install line, the senzall.com download link, the offline single-player nature, the Senzall VIP roster, and the tower-together MIT attribution (link + `NOTICE`). Do **not** reference pounceapps.
+
+- [ ] **Step 7: Commit**
 
 ```bash
-git add -A && git commit -m "packaging: release.sh (sign+notarize+DMG) mirroring pounceterm"
+git add -A && git commit -m "packaging: release.sh (sign+notarize+DMG+senzalldev publish)"
 ```
 
 ---

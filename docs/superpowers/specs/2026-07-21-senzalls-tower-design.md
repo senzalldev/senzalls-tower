@@ -215,9 +215,14 @@ Credentials are **already in the user's Keychain** — no one-time setup:
    `xcrun notarytool submit app.zip --keychain-profile "$NOTARY_PROFILE" --wait`;
    `xcrun stapler staple "$APP"`; then the same submit+staple for the DMG;
    `spctl --assess --type open --context context:primary-signature -v "$DMG"`.
-6. (Optional, `SKIP_PUBLISH` default-on for this game) GitHub release / Homebrew
-   cask — mirrors pounceterm but **off by default**; the deliverable is the
-   shareable `.dmg`.
+6. **Publish (senzalldev gaming persona — must not cross `pounceapps`)** —
+   mirrors pounceterm's publish flow but points entirely at `senzalldev`:
+   - GitHub Release on `senzalldev/senzalls-tower` with the notarized DMG as an
+     asset (`gh release create/upload`). senzall.com links to this release.
+   - Homebrew cask committed to `senzalldev/homebrew-tap` → installable via
+     `brew install --cask senzalldev/tap/senzalls-tower`; the cask `url` points
+     at the GitHub Release asset, `sha256` computed from the built DMG.
+   - Gated by `SKIP_PUBLISH` (build+notarize only when set).
 
 **Entitlements:** hardened runtime enabled; **no** network entitlement; add
 `com.apple.security.cs.allow-jit` only if WKWebView's JSC requires it under
