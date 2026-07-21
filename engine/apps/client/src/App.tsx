@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { type GameSocket, TowerSocket } from "./lib/socket";
+import { getDisplayName, getPlayerId } from "./lib/storage";
 import {
 	createLocalSocket,
 	IS_LOCAL,
@@ -6,8 +8,6 @@ import {
 	LOCAL_PLAYER_NAME,
 	LOCAL_TOWER_ID,
 } from "./local/localBootstrap";
-import { type GameSocket, TowerSocket } from "./lib/socket";
-import { getDisplayName, getPlayerId } from "./lib/storage";
 import { GameScreen } from "./screens/GameScreen";
 import { GuestScreen } from "./screens/GuestScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";

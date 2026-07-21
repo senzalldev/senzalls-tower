@@ -14,11 +14,18 @@ import {
 	resolveQueuedInputBatches,
 	shouldEmitCheckpoint,
 } from "../../../worker/src/durable-objects/lockstep";
-import { TowerSim } from "../../../worker/src/sim/index";
-import { getTileStarRequirement, STARTING_CASH } from "../../../worker/src/sim/resources";
-import { createInitialSnapshot } from "../../../worker/src/sim/snapshot";
 import type { SimSnapshot } from "../../../worker/src/sim/index";
-import type { ClientMessage, ResolvedInputBatch, ServerMessage } from "../types";
+import { TowerSim } from "../../../worker/src/sim/index";
+import {
+	getTileStarRequirement,
+	STARTING_CASH,
+} from "../../../worker/src/sim/resources";
+import { createInitialSnapshot } from "../../../worker/src/sim/snapshot";
+import type {
+	ClientMessage,
+	ResolvedInputBatch,
+	ServerMessage,
+} from "../types";
 
 const CHECKPOINT_INTERVAL_TICKS = 500;
 const LOCAL_PLAYER_FALLBACK = "local";
@@ -277,15 +284,29 @@ function localSeq(): number {
 function commandFromMessage(msg: ClientMessage) {
 	switch (msg.type) {
 		case "prompt_response":
-			return { type: "prompt_response", promptId: msg.promptId, accepted: msg.accepted } as const;
+			return {
+				type: "prompt_response",
+				promptId: msg.promptId,
+				accepted: msg.accepted,
+			} as const;
 		case "set_rent_level":
-			return { type: "set_rent_level", x: msg.x, y: msg.y, rentLevel: msg.rentLevel } as const;
+			return {
+				type: "set_rent_level",
+				x: msg.x,
+				y: msg.y,
+				rentLevel: msg.rentLevel,
+			} as const;
 		case "add_elevator_car":
 			return { type: "add_elevator_car", x: msg.x, y: msg.y } as const;
 		case "remove_elevator_car":
 			return { type: "remove_elevator_car", x: msg.x, y: msg.y } as const;
 		case "set_cinema_movie_pool":
-			return { type: "set_cinema_movie_pool", x: msg.x, y: msg.y, pool: msg.pool } as const;
+			return {
+				type: "set_cinema_movie_pool",
+				x: msg.x,
+				y: msg.y,
+				pool: msg.pool,
+			} as const;
 		default:
 			return null;
 	}

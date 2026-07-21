@@ -6,6 +6,7 @@ import {
 	TowerLockstepSession,
 } from "../lib/lockstepSession";
 import { setTowerToolbarCache } from "../lib/storage";
+import { vipArrivalMessage, vipForVisit } from "../local/vips";
 import type {
 	CarrierCarStateData,
 	ClientMessage,
@@ -15,6 +16,11 @@ import type {
 } from "../types";
 import { TILE_WIDTHS } from "../types";
 import type { ActivePrompt, CellInfoData } from "./gameScreenTypes";
+
+// Minimum sim-ticks between named VIP announcements, so a placed metro station
+// (which produces frequent train arrivals) surfaces a VIP as a notable guest
+// rather than spamming. ~one in-game morning at 1x.
+const VIP_MIN_GAP_TICKS = 600;
 
 const TWO_FLOOR_TILES = new Set(["cinema", "partyHall", "recyclingCenter"]);
 const OVERLAY_TILES = new Set([
@@ -173,6 +179,9 @@ export class TowerSessionController {
 	private state: TowerSessionState = INITIAL_TOWER_SESSION_STATE;
 	private lastEconomyUpdateMs = 0;
 	private lastSlowUpdateMs = 0;
+	private lastSimTime = 0;
+	private vipVisitCount = 0;
+	private lastVipTick = Number.NEGATIVE_INFINITY;
 	private unsubscribeMessage: (() => void) | null = null;
 	private unsubscribeStatus: (() => void) | null = null;
 
@@ -199,6 +208,7 @@ export class TowerSessionController {
 		this.lockstep = new TowerLockstepSession({
 			playerId,
 			onReset: (state, timing) => {
+				this.lastSimTime = state.simTime;
 				this.onSimTime(state.simTime);
 				this.onEconomy(state.cash, state.population);
 				this.patchState({
@@ -226,6 +236,7 @@ export class TowerSessionController {
 				});
 			},
 			onTick: (state) => {
+				this.lastSimTime = state.simTime;
 				this.onSimTime(state.simTime);
 				const now = state.receivedAtMs;
 				const patch: Partial<TowerSessionState> = {};
@@ -560,6 +571,20 @@ export class TowerSessionController {
 					if (Number.isFinite(newStarCount)) {
 						this.patchState({ starUpgrade: { newStarCount } });
 					}
+				} else if (msg.message === "metro_train_arrival") {
+					// The sim's special-visitor event. Name the arriving VIP from the
+					// roster (presentation only), throttled so it reads as a notable
+					// guest rather than every train.
+					if (this.lastSimTime - this.lastVipTick >= VIP_MIN_GAP_TICKS) {
+						this.lastVipTick = this.lastSimTime;
+						const vip = vipForVisit(this.vipVisitCount);
+						this.vipVisitCount += 1;
+						this.addToast(vipArrivalMessage(vip), "info");
+					}
+				} else if (msg.kind === "event" && msg.message) {
+					// Human-readable one-off events (ransom paid, helicopter dispatched,
+					// etc.) that would otherwise be dropped.
+					this.addToast(msg.message, "info");
 				}
 				break;
 			case "prompt":

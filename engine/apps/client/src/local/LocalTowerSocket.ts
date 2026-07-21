@@ -3,10 +3,10 @@
 // of a WebSocket. It never touches the network. The host's ServerMessages are
 // delivered synchronously to onMessage listeners.
 
-import { LocalGameHost } from "./LocalGameHost";
-import type { GameSocket } from "../lib/socket";
 import type { SimSnapshot } from "../../../worker/src/sim/index";
+import type { GameSocket } from "../lib/socket";
 import type { ClientMessage, ConnectionStatus, ServerMessage } from "../types";
+import { LocalGameHost } from "./LocalGameHost";
 
 type MessageListener = (msg: ServerMessage) => void;
 type StatusListener = (status: ConnectionStatus) => void;

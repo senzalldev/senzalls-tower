@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { LocalTowerSocket } from "./LocalTowerSocket";
 import type { ClientMessage, ServerMessage } from "../types";
+import { LocalTowerSocket } from "./LocalTowerSocket";
 
 function joinMsg(): ClientMessage {
 	return { type: "join_tower", playerId: "p1", displayName: "Player One" };
@@ -51,7 +51,9 @@ describe("LocalTowerSocket (offline single-player)", () => {
 		seen.length = 0;
 		s.send({ type: "set_speed", multiplier: 3 });
 		const settings = seen.find((m) => m.type === "session_settings");
-		expect(settings && "speedMultiplier" in settings && settings.speedMultiplier).toBe(3);
+		expect(
+			settings && "speedMultiplier" in settings && settings.speedMultiplier,
+		).toBe(3);
 	});
 
 	it("advances the sim on its own timer and confirms inputs (authoritative_batch)", () => {
