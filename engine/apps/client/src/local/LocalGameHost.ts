@@ -239,7 +239,19 @@ export class LocalGameHost {
 			this.emit({ type: "notification", kind: n.kind, message: n.message });
 		}
 		for (const p of result.prompts) {
-			if (p.promptKind === "carrier_edit_confirmation") continue;
+			if (p.promptKind === "carrier_edit_confirmation") {
+				// Single-player: auto-confirm removing an elevator car that still has
+				// traffic (the server would show a modal; offline we just complete it
+				// on the next tick so the action never silently stalls).
+				this.enqueue(this.sim.simTime + 1, {
+					playerId: this.playerId,
+					clientSeq: localSeq(),
+					inputs: [
+						{ type: "prompt_response", promptId: p.promptId, accepted: true },
+					],
+				});
+				continue;
+			}
 			this.emit({
 				type: "prompt",
 				promptId: p.promptId,

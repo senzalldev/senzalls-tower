@@ -304,7 +304,10 @@ export const GameToolbar = memo(
 							)}
 						</form>
 					) : (
-						!isCompact && (
+						!isCompact &&
+						(IS_LOCAL ? (
+							<span style={styles.towerLabel}>{towerName || towerId}</span>
+						) : (
 							<button
 								type="button"
 								style={styles.towerLabel}
@@ -313,7 +316,7 @@ export const GameToolbar = memo(
 							>
 								{towerName || towerId}
 							</button>
-						)
+						))
 					)}
 					{!isCompact && APP_VERSION && (
 						<span

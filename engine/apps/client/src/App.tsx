@@ -120,6 +120,8 @@ export function App() {
 
 	const syncFromLocation = useCallback(
 		async (hasPlayer: boolean) => {
+			// Offline single-player never touches the server / history routing.
+			if (IS_LOCAL) return;
 			if (!hasPlayer) {
 				moveToGuest();
 				return;
