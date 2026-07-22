@@ -82,6 +82,15 @@ export class LocalTowerSocket implements GameSocket {
 		return this.host?.getSnapshot() ?? null;
 	}
 
+	// ── Cheats (single-player only) ─────────────────────────────────────────────
+	grantCash(amount: number): void {
+		this.host?.grantCash(amount);
+	}
+
+	summonVip(): void {
+		this.host?.summonVip();
+	}
+
 	private deliver(msg: ServerMessage): void {
 		for (const listener of this.messageListeners) listener(msg);
 	}

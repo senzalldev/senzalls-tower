@@ -14,6 +14,14 @@ struct GameWebView: NSViewRepresentable {
         config.defaultWebpagePreferences.allowsContentJavaScript = true
         config.userContentController.add(context.coordinator, name: Bridge.messageName)
 
+        // Expose the app version to the web UI.
+        let shortVer = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        config.userContentController.addUserScript(
+            WKUserScript(
+                source: "window.__SENZALL_VERSION = \"\(shortVer)\";",
+                injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        )
+
         // Capture early JS errors so load failures are diagnosable.
         let errorCatcher = """
         window.__senzallErrors = [];

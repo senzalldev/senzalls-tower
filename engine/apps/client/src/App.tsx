@@ -68,6 +68,7 @@ export function App() {
 	// Local single-player only: bump to force a fresh GameScreen/session (New/Load).
 	const [sessionKey, setSessionKey] = useState(0);
 	const pausedRef = useRef(false);
+	const freeBuildRef = useRef(false);
 
 	const enterTower = useCallback(
 		(
@@ -191,6 +192,26 @@ export function App() {
 							// ignore corrupt save
 						}
 					});
+					break;
+				// ── Cheats ──
+				case "cash1m":
+					(active as LocalTowerSocket).grantCash(1_000_000);
+					break;
+				case "cash10m":
+					(active as LocalTowerSocket).grantCash(10_000_000);
+					break;
+				case "freebuild":
+					freeBuildRef.current = !freeBuildRef.current;
+					active.send({
+						type: "set_free_build",
+						enabled: freeBuildRef.current,
+					});
+					break;
+				case "maxstars":
+					active.send({ type: "set_star_count", starCount: 5 });
+					break;
+				case "vip":
+					(active as LocalTowerSocket).summonVip();
 					break;
 			}
 		});

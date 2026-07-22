@@ -581,6 +581,11 @@ export class TowerSessionController {
 						this.vipVisitCount += 1;
 						this.addToast(vipArrivalMessage(vip), "info");
 					}
+				} else if (msg.kind === "vip") {
+					// Manual VIP summon (cheat): always announce the next roster VIP.
+					const vip = vipForVisit(this.vipVisitCount);
+					this.vipVisitCount += 1;
+					this.addToast(vipArrivalMessage(vip), "info");
 				} else if (msg.kind === "event" && msg.message) {
 					// Human-readable one-off events (ransom paid, helicopter dispatched,
 					// etc.) that would otherwise be dropped.

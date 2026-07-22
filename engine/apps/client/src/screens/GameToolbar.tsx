@@ -12,6 +12,13 @@ import type { ConnectionStatus } from "../types";
 import { DAY_TICK_MAX } from "../types";
 import { gameScreenStyles as styles } from "./gameScreenStyles";
 
+// Version injected by the native macOS shell (window.__SENZALL_VERSION).
+const APP_VERSION =
+	typeof window !== "undefined"
+		? ((window as unknown as { __SENZALL_VERSION?: string })
+				.__SENZALL_VERSION ?? "")
+		: "";
+
 const COMPACT_QUERY = "(max-width: 720px)";
 
 function formatCash(cash: number): string {
@@ -307,6 +314,19 @@ export const GameToolbar = memo(
 								{towerName || towerId}
 							</button>
 						)
+					)}
+					{!isCompact && APP_VERSION && (
+						<span
+							style={{
+								fontSize: 11,
+								opacity: 0.5,
+								marginLeft: 6,
+								alignSelf: "center",
+							}}
+							title="Version"
+						>
+							v{APP_VERSION}
+						</span>
 					)}
 				</div>
 

@@ -64,6 +64,23 @@ export class LocalGameHost {
 		return this.sim.saveState();
 	}
 
+	// ── Cheats (single-player only) ─────────────────────────────────────────────
+
+	/** Add cash to the balance (capped at the sim's 99,999,999 cap). */
+	grantCash(amount: number): void {
+		const snap = this.sim.saveState();
+		const CAP = 99_999_999;
+		snap.ledger.cashBalance = Math.min(CAP, snap.ledger.cashBalance + amount);
+		this.sim = TowerSim.fromSnapshot(snap);
+		this.sim.freeBuild = this.freeBuild;
+		this.broadcastCheckpoint();
+	}
+
+	/** Announce a VIP visit immediately (roster naming happens client-side). */
+	summonVip(): void {
+		this.emit({ type: "notification", kind: "vip", message: "summon" });
+	}
+
 	dispose(): void {
 		this.stopTick();
 	}
