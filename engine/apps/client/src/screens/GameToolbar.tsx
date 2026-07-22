@@ -7,6 +7,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { IS_LOCAL } from "../local/localBootstrap";
 import type { ConnectionStatus } from "../types";
 import { DAY_TICK_MAX } from "../types";
 import { gameScreenStyles as styles } from "./gameScreenStyles";
@@ -228,22 +229,26 @@ export const GameToolbar = memo(
 			<div style={styles.toolbarSecondaryRow}>
 				<span ref={dateSpanRef} style={styles.calendarItem} />
 				<span ref={timeSpanRef} style={styles.calendarItem} />
-				<span style={styles.statItem}>
-					{playerCount} player{playerCount !== 1 ? "s" : ""}
-				</span>
-				<span style={styles.toolbarStatus}>
-					<span style={{ ...styles.statusDot, background: statusColor }} />
-					<span style={styles.statItem}>{statusText}</span>
-					{connectionStatus === "disconnected" && (
-						<button
-							type="button"
-							style={styles.reconnectBtn}
-							onClick={onReconnect}
-						>
-							Reconnect
-						</button>
-					)}
-				</span>
+				{!IS_LOCAL && (
+					<>
+						<span style={styles.statItem}>
+							{playerCount} player{playerCount !== 1 ? "s" : ""}
+						</span>
+						<span style={styles.toolbarStatus}>
+							<span style={{ ...styles.statusDot, background: statusColor }} />
+							<span style={styles.statItem}>{statusText}</span>
+							{connectionStatus === "disconnected" && (
+								<button
+									type="button"
+									style={styles.reconnectBtn}
+									onClick={onReconnect}
+								>
+									Reconnect
+								</button>
+							)}
+						</span>
+					</>
+				)}
 			</div>
 		) : null;
 
@@ -380,29 +385,35 @@ export const GameToolbar = memo(
 						<>
 							<span ref={dateSpanRef} style={styles.calendarItem} />
 							<span ref={timeSpanRef} style={styles.calendarItem} />
-							<span style={styles.statItem}>
-								{playerCount} player{playerCount !== 1 ? "s" : ""}
-							</span>
-							<span style={styles.toolbarStatus}>
-								<span
-									style={{ ...styles.statusDot, background: statusColor }}
-								/>
-								<span style={styles.statItem}>{statusText}</span>
-								{connectionStatus === "disconnected" && (
-									<button
-										type="button"
-										style={styles.reconnectBtn}
-										onClick={onReconnect}
-									>
-										Reconnect
-									</button>
-								)}
-							</span>
+							{!IS_LOCAL && (
+								<>
+									<span style={styles.statItem}>
+										{playerCount} player{playerCount !== 1 ? "s" : ""}
+									</span>
+									<span style={styles.toolbarStatus}>
+										<span
+											style={{ ...styles.statusDot, background: statusColor }}
+										/>
+										<span style={styles.statItem}>{statusText}</span>
+										{connectionStatus === "disconnected" && (
+											<button
+												type="button"
+												style={styles.reconnectBtn}
+												onClick={onReconnect}
+											>
+												Reconnect
+											</button>
+										)}
+									</span>
+								</>
+							)}
 						</>
 					)}
-					<button type="button" style={styles.leaveBtn} onClick={onLeave}>
-						Leave
-					</button>
+					{!IS_LOCAL && (
+						<button type="button" style={styles.leaveBtn} onClick={onLeave}>
+							Leave
+						</button>
+					)}
 				</div>
 			</div>
 		);
