@@ -310,44 +310,36 @@ export const GameBuildPanel = memo(function GameBuildPanel({
 						</button>
 					)}
 				</div>
-				{visibleCategories.map((tools, categoryIndex) => (
-					<div
-						key={tools[0].id}
-						style={{
-							...styles.buildGrid,
-							...(categoryIndex > 0 ? { marginTop: 2 } : {}),
-						}}
-					>
-						{tools.map((tool) => {
-							const active = selectedTool === tool.id;
-							return (
-								<button
-									key={tool.id}
-									type="button"
-									title={
-										tool.cost > 0
-											? `${tool.label} — $${tool.cost.toLocaleString()}`
-											: tool.label
-									}
-									style={{
-										...styles.buildBtn,
-										borderColor: active
-											? tool.color
-											: "rgba(123, 148, 170, 0.25)",
-										background: active
-											? `${tool.color}22`
-											: "rgba(255, 255, 255, 0.02)",
-										color: active ? tool.color : "#aab8c2",
-									}}
-									onClick={() => handleToolSelect(tool.id)}
-								>
-									<tool.Icon size={16} strokeWidth={1.8} />
-									<span style={styles.buildBtnLabel}>{tool.label}</span>
-								</button>
-							);
-						})}
-					</div>
-				))}
+				<div style={styles.buildGrid}>
+					{visibleCategories.flat().map((tool) => {
+						const active = selectedTool === tool.id;
+						return (
+							<button
+								key={tool.id}
+								type="button"
+								title={
+									tool.cost > 0
+										? `${tool.label} — $${tool.cost.toLocaleString()}`
+										: tool.label
+								}
+								style={{
+									...styles.buildBtn,
+									borderColor: active
+										? tool.color
+										: "rgba(123, 148, 170, 0.25)",
+									background: active
+										? `${tool.color}22`
+										: "rgba(255, 255, 255, 0.02)",
+									color: active ? tool.color : "#cdd9e5",
+								}}
+								onClick={() => handleToolSelect(tool.id)}
+							>
+								<tool.Icon size={18} strokeWidth={1.8} />
+								<span style={styles.buildBtnLabel}>{tool.label}</span>
+							</button>
+						);
+					})}
+				</div>
 			</div>
 		</>
 	);
