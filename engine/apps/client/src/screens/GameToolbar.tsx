@@ -257,6 +257,9 @@ export const GameToolbar = memo(
 				style={{
 					...styles.toolbar,
 					...(isCompact ? styles.toolbarRowFlush : {}),
+					// Clear the macOS traffic-light window controls in the native
+					// shell (hidden title bar overlays them on the top-left).
+					...(IS_LOCAL ? { paddingLeft: 84 } : {}),
 				}}
 			>
 				<div style={styles.toolbarLeft}>
