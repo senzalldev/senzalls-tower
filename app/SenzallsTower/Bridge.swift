@@ -1,4 +1,7 @@
+import OSLog
 import WebKit
+
+private let log = Logger(subsystem: "com.sparks.SenzallsTower", category: "engine")
 
 /// Bridges the native app and the web engine.
 ///
@@ -6,11 +9,43 @@ import WebKit
 ///   { id, action: "save"|"autosave"|"load"|"list", slot?, state? }
 /// native → JS reply: `window.senzall._resolve(id, payload)`
 /// native → JS menu:  `window.senzall._menu("<action>")`
-final class Bridge: NSObject, WKScriptMessageHandler {
+final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     static let messageName = "senzall"
 
     weak var webView: WKWebView? {
-        didSet { observeMenuActions() }
+        didSet {
+            webView?.navigationDelegate = self
+            observeMenuActions()
+        }
+    }
+
+    // MARK: - Navigation diagnostics
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        // ES modules execute after didFinish, so probe React mount a bit later.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak webView] in
+            webView?.evaluateJavaScript(
+                "document.title + '|' + (document.getElementById('root')?.childElementCount ?? 0)"
+                    + " + '|' + ((window.__senzallErrors||[]).join(' ;; '))"
+            ) { value, _ in
+                log.info("engine status: \(String(describing: value), privacy: .public)")
+                #if DEBUG
+                if let s = value as? String {
+                    try? s.write(
+                        to: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("senzall-verify.txt"),
+                        atomically: true, encoding: .utf8)
+                }
+                #endif
+            }
+        }
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        log.error("navigation failed: \(error.localizedDescription, privacy: .public)")
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        log.error("provisional navigation failed: \(error.localizedDescription, privacy: .public)")
     }
 
     private var menuObserver: NSObjectProtocol?
