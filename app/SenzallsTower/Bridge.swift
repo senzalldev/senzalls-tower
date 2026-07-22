@@ -23,18 +23,34 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         // ES modules execute after didFinish, so probe React mount a bit later.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak webView] in
-            webView?.evaluateJavaScript(
-                "document.title + '|' + (document.getElementById('root')?.childElementCount ?? 0)"
-                    + " + '|' + ((window.__senzallErrors||[]).join(' ;; '))"
-            ) { value, _ in
-                log.info("engine status: \(String(describing: value), privacy: .public)")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak webView] in
+            let probe = """
+            (function () {
+              var root = document.getElementById('root');
+              var cs = document.querySelectorAll('canvas');
+              var c = cs[0];
+              var gl = null;
+              try { gl = c && (c.getContext('webgl2') || c.getContext('webgl') || c.getContext('experimental-webgl')); } catch (e) {}
+              return JSON.stringify({
+                title: document.title,
+                rootKids: root ? root.childElementCount : -1,
+                bodyText: (document.body.innerText || '').slice(0, 200),
+                canvasCount: cs.length,
+                canvasSize: c ? (c.width + 'x' + c.height) : 'none',
+                webgl: gl ? 'yes' : 'no',
+                dpr: window.devicePixelRatio,
+                win: window.innerWidth + 'x' + window.innerHeight,
+                errors: (window.__senzallErrors || [])
+              });
+            })()
+            """
+            webView?.evaluateJavaScript(probe) { value, err in
+                let out = (value as? String) ?? "eval-error: \(String(describing: err))"
+                log.info("engine status: \(out, privacy: .public)")
                 #if DEBUG
-                if let s = value as? String {
-                    try? s.write(
-                        to: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("senzall-verify.txt"),
-                        atomically: true, encoding: .utf8)
-                }
+                try? out.write(
+                    to: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("senzall-verify.txt"),
+                    atomically: true, encoding: .utf8)
                 #endif
             }
         }

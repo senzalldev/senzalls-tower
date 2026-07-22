@@ -140,72 +140,76 @@ export function App() {
 		[enterTower, moveToGuest, moveToLobby],
 	);
 
+	// Local single-player: run ONCE on mount. Must not depend on socketRef.current
+	// (startLocalSession reassigns it), or the effect would re-fire in a loop.
 	useEffect(() => {
-		if (IS_LOCAL) {
-			// Offline single-player: skip guest/lobby, resume the autosave if any.
-			let cancelled = false;
-			void senzall.load("autosave").then((saved) => {
-				if (cancelled) return;
-				let snapshot: SimSnapshot | null = null;
-				if (saved) {
-					try {
-						snapshot = JSON.parse(saved) as SimSnapshot;
-					} catch {
-						snapshot = null;
-					}
+		if (!IS_LOCAL) return;
+		let cancelled = false;
+		void senzall.load("autosave").then((saved) => {
+			if (cancelled) return;
+			let snapshot: SimSnapshot | null = null;
+			if (saved) {
+				try {
+					snapshot = JSON.parse(saved) as SimSnapshot;
+				} catch {
+					snapshot = null;
 				}
-				startLocalSession(snapshot);
-			});
+			}
+			startLocalSession(snapshot);
+		});
 
-			senzall.onMenu((action) => {
-				const active = socketRef.current;
-				switch (action) {
-					case "pause":
-						pausedRef.current = !pausedRef.current;
-						active.send({ type: "set_paused", paused: pausedRef.current });
-						break;
-					case "speed1":
-						active.send({ type: "set_speed", multiplier: 1 });
-						break;
-					case "speed3":
-						active.send({ type: "set_speed", multiplier: 3 });
-						break;
-					case "speed10":
-						active.send({ type: "set_speed", multiplier: 10 });
-						break;
-					case "save": {
-						const snap = (active as LocalTowerSocket).getSnapshot();
-						if (snap) void senzall.save("autosave", JSON.stringify(snap));
-						break;
-					}
-					case "newTower":
-						startLocalSession(null);
-						break;
-					case "load":
-						void senzall.load("autosave").then((saved) => {
-							if (!saved) return;
-							try {
-								startLocalSession(JSON.parse(saved) as SimSnapshot);
-							} catch {
-								// ignore corrupt save
-							}
-						});
-						break;
+		senzall.onMenu((action) => {
+			const active = socketRef.current;
+			switch (action) {
+				case "pause":
+					pausedRef.current = !pausedRef.current;
+					active.send({ type: "set_paused", paused: pausedRef.current });
+					break;
+				case "speed1":
+					active.send({ type: "set_speed", multiplier: 1 });
+					break;
+				case "speed3":
+					active.send({ type: "set_speed", multiplier: 3 });
+					break;
+				case "speed10":
+					active.send({ type: "set_speed", multiplier: 10 });
+					break;
+				case "save": {
+					const snap = (active as LocalTowerSocket).getSnapshot();
+					if (snap) void senzall.save("autosave", JSON.stringify(snap));
+					break;
 				}
-			});
+				case "newTower":
+					startLocalSession(null);
+					break;
+				case "load":
+					void senzall.load("autosave").then((saved) => {
+						if (!saved) return;
+						try {
+							startLocalSession(JSON.parse(saved) as SimSnapshot);
+						} catch {
+							// ignore corrupt save
+						}
+					});
+					break;
+			}
+		});
 
-			const autosaveTimer = setInterval(() => {
-				const snap = (socketRef.current as LocalTowerSocket).getSnapshot();
-				if (snap) void senzall.autosave(JSON.stringify(snap));
-			}, 60_000);
+		const autosaveTimer = setInterval(() => {
+			const snap = (socketRef.current as LocalTowerSocket).getSnapshot();
+			if (snap) void senzall.autosave(JSON.stringify(snap));
+		}, 60_000);
 
-			return () => {
-				cancelled = true;
-				clearInterval(autosaveTimer);
-				socketRef.current.disconnect();
-			};
-		}
+		return () => {
+			cancelled = true;
+			clearInterval(autosaveTimer);
+			socketRef.current.disconnect();
+		};
+	}, [startLocalSession]);
 
+	// Online mode: restore session from stored identity / URL.
+	useEffect(() => {
+		if (IS_LOCAL) return;
 		const storedId = getPlayerId();
 		const storedName = getDisplayName();
 		if (storedId && storedName) {
@@ -217,7 +221,7 @@ export function App() {
 		return () => {
 			socket.disconnect();
 		};
-	}, [socket, syncFromLocation, startLocalSession]);
+	}, [socket, syncFromLocation]);
 
 	useEffect(() => {
 		function onPopState() {
