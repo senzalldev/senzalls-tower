@@ -24,6 +24,8 @@ targets:
       properties:
         CFBundleDisplayName: Senzall's Tower
         CFBundleName: SenzallsTower
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSApplicationCategoryType: public.app-category.simulation-games
         NSHumanReadableCopyright: "Includes tower-together (MIT, © 2026 Patrick Hulin). No original SimTower assets."
         NSHighResolutionCapable: true
