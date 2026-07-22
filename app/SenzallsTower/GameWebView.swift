@@ -5,6 +5,8 @@ import WebKit
 /// WKWebView. Fully local: no network is used. The bridge (registered in
 /// Task 7) exposes native save/load and menu actions to the page.
 struct GameWebView: NSViewRepresentable {
+    var uiScale: Double = 1.0
+
     func makeCoordinator() -> Bridge {
         Bridge()
     }
@@ -63,6 +65,8 @@ struct GameWebView: NSViewRepresentable {
             webView?.window?.isMovableByWindowBackground = true
         }
 
+        webView.pageZoom = CGFloat(uiScale)
+
         if hasEngine {
             webView.load(URLRequest(url: EngineSchemeHandler.indexURL))
         } else {
@@ -77,5 +81,11 @@ struct GameWebView: NSViewRepresentable {
         return webView
     }
 
-    func updateNSView(_ nsView: WKWebView, context: Context) {}
+    func updateNSView(_ nsView: WKWebView, context: Context) {
+        // Apply live UI-scale changes from Settings.
+        let zoom = CGFloat(uiScale)
+        if nsView.pageZoom != zoom {
+            nsView.pageZoom = zoom
+        }
+    }
 }
