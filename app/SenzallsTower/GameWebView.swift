@@ -6,6 +6,8 @@ import WebKit
 /// Task 7) exposes native save/load and menu actions to the page.
 struct GameWebView: NSViewRepresentable {
     var uiScale: Double = 1.0
+    var launchSpeed: Int = 1
+    var startMuted: Bool = false
 
     func makeCoordinator() -> Bridge {
         Bridge()
@@ -16,11 +18,15 @@ struct GameWebView: NSViewRepresentable {
         config.defaultWebpagePreferences.allowsContentJavaScript = true
         config.userContentController.add(context.coordinator, name: Bridge.messageName)
 
-        // Expose the app version to the web UI.
+        // Expose the app version + launch preferences to the web UI.
         let shortVer = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let bootstrap = """
+        window.__SENZALL_VERSION = "\(shortVer)";
+        window.__SENZALL_LAUNCH = { speed: \(launchSpeed), muted: \(startMuted ? "true" : "false") };
+        """
         config.userContentController.addUserScript(
             WKUserScript(
-                source: "window.__SENZALL_VERSION = \"\(shortVer)\";",
+                source: bootstrap,
                 injectionTime: .atDocumentStart, forMainFrameOnly: true)
         )
 

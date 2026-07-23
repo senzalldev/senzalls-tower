@@ -16,6 +16,8 @@ export interface LocalTowerSocketOptions {
 	name: string;
 	/** Optional saved snapshot to resume from. */
 	snapshot?: SimSnapshot | null;
+	/** Initial sim speed (launch preference). */
+	speed?: 1 | 3 | 10;
 }
 
 export class LocalTowerSocket implements GameSocket {
@@ -34,6 +36,7 @@ export class LocalTowerSocket implements GameSocket {
 			towerId: this.options.towerId,
 			name: this.options.name,
 			snapshot: this.options.snapshot ?? null,
+			speed: this.options.speed,
 			emit: (msg) => this.deliver(msg),
 		});
 		this.setStatus("connected");

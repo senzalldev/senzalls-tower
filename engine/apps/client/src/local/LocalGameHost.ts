@@ -37,6 +37,8 @@ export interface LocalGameHostOptions {
 	name: string;
 	/** Resume from a saved snapshot; otherwise a fresh tower is created. */
 	snapshot?: SimSnapshot | null;
+	/** Initial sim speed (launch preference). */
+	speed?: 1 | 3 | 10;
 	emit: Emit;
 }
 
@@ -53,6 +55,7 @@ export class LocalGameHost {
 
 	constructor(options: LocalGameHostOptions) {
 		this.emit = options.emit;
+		if (options.speed) this.speedMultiplier = options.speed;
 		const snapshot =
 			options.snapshot ??
 			createInitialSnapshot(options.towerId, options.name, STARTING_CASH);

@@ -3,6 +3,7 @@ import type { GameScene } from "../game/GameScene";
 import { PhaserGame } from "../game/PhaserGame";
 import { buildTransportMetrics } from "../game/transportSelectors";
 import type { GameSocket } from "../lib/socket";
+import { IS_LOCAL, launchSettings } from "../local/localBootstrap";
 import type { SelectedTool, SimStateData } from "../types";
 import { getTileStarRequirement } from "../types";
 import { CellInspectionDialog } from "./CellInspectionDialog";
@@ -47,7 +48,9 @@ export function GameScreen({
 	const [toasts, setToasts] = useState<Toast[]>([]);
 	const [inspectedSim, setInspectedSim] = useState<SimStateData | null>(null);
 	const [stressBadgesEnabled, setStressBadgesEnabled] = useState(true);
-	const [soundMuted, setSoundMuted] = useState(false);
+	const [soundMuted, setSoundMuted] = useState(
+		() => IS_LOCAL && launchSettings().muted,
+	);
 	const [pendingShaftErase, setPendingShaftErase] = useState<{
 		x: number;
 		topY: number;
