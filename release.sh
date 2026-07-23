@@ -59,7 +59,8 @@ echo "✓ notarized + stapled: $DMG_PATH"
 # Publishing to the senzalldev org requires the GH_ACCOUNT login (the machine may
 # have multiple GitHub accounts active; only this one has org write access).
 GH_ACCOUNT="${GH_ACCOUNT:-StevenSSparks}"
-if gh auth status 2>/dev/null | grep -q "account ${GH_ACCOUNT}"; then
+# gh auth status prints to stderr, so fold it into stdout before grepping.
+if gh auth status 2>&1 | grep -q "account ${GH_ACCOUNT}"; then
   gh auth switch --hostname github.com --user "$GH_ACCOUNT" >/dev/null 2>&1 \
     && echo "✓ gh account: ${GH_ACCOUNT}"
 else
