@@ -30,6 +30,10 @@ interface ChangeEntry {
 // Newest first. Bump this with each release.
 const CHANGELOG: ChangeEntry[] = [
 	{
+		version: "1.0.15",
+		notes: ["Sound menu: added Mute All Sounds (alongside Enable All)."],
+	},
+	{
 		version: "1.0.14",
 		notes: [
 			"Reorganized the top bar into three groups: controls · money · clock.",

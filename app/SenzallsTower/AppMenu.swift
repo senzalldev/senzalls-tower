@@ -10,6 +10,17 @@ private func fire(_ action: String) {
     NotificationCenter.default.post(name: .senzallMenuAction, object: action)
 }
 
+/// Turn every sound category on or off at once.
+private func setAllSounds(_ on: Bool) {
+    for key in [
+        SettingsKeys.sndAmbience, SettingsKeys.sndCash, SettingsKeys.sndTransport,
+        SettingsKeys.sndCrowd, SettingsKeys.sndOffice, SettingsKeys.sndFood,
+        SettingsKeys.sndLodging, SettingsKeys.sndRetail, SettingsKeys.sndServices,
+    ] {
+        UserDefaults.standard.set(on, forKey: key)
+    }
+}
+
 /// Show the custom About window (see AboutView).
 @MainActor
 func showAboutPanel() {
@@ -83,15 +94,8 @@ struct SenzallCommands: Commands {
             Toggle("Shops", isOn: $sndRetail)
             Toggle("Services", isOn: $sndServices)
             Divider()
-            Button("Enable All Sounds") {
-                for key in [
-                    SettingsKeys.sndAmbience, SettingsKeys.sndCash, SettingsKeys.sndTransport,
-                    SettingsKeys.sndCrowd, SettingsKeys.sndOffice, SettingsKeys.sndFood,
-                    SettingsKeys.sndLodging, SettingsKeys.sndRetail, SettingsKeys.sndServices,
-                ] {
-                    UserDefaults.standard.set(true, forKey: key)
-                }
-            }
+            Button("Enable All Sounds") { setAllSounds(true) }
+            Button("Mute All Sounds") { setAllSounds(false) }
         }
     }
 }
