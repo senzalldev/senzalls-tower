@@ -56,6 +56,19 @@ echo "✓ notarized + stapled: $DMG_PATH"
 
 [ "${SKIP_PUBLISH:-0}" = "1" ] && { echo "SKIP_PUBLISH — DMG ready at $DMG_PATH"; exit 0; }
 
+# Publishing to the senzalldev org requires the GH_ACCOUNT login (the machine may
+# have multiple GitHub accounts active; only this one has org write access).
+GH_ACCOUNT="${GH_ACCOUNT:-StevenSSparks}"
+if gh auth status 2>/dev/null | grep -q "account ${GH_ACCOUNT}"; then
+  gh auth switch --hostname github.com --user "$GH_ACCOUNT" >/dev/null 2>&1 \
+    && echo "✓ gh account: ${GH_ACCOUNT}"
+else
+  echo "⚠ gh account '${GH_ACCOUNT}' not found; publishing as current account (may 403)."
+fi
+
+# 4.5 push source so the release tag has a commit
+git push origin HEAD >/dev/null 2>&1 && echo "✓ pushed source" || echo "= source already up to date"
+
 # 5. GitHub Release on senzalldev (gaming persona — NOT pounceapps)
 if gh release view "$TAG" --repo "$RELEASE_REPO" >/dev/null 2>&1; then
   gh release upload "$TAG" "$DMG_PATH" --repo "$RELEASE_REPO" --clobber
