@@ -17,6 +17,7 @@
 		B44E02B04E293DE966994868 /* GameWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1F4285D21202326752F99B2 /* GameWebView.swift */; };
 		C37DB07788EE521F58C663E7 /* AppMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = D26E45062A57F155BA3C1AE1 /* AppMenu.swift */; };
 		C8B6B73FF2F037CEF037A5D0 /* SenzallsTowerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B647A6D41E7D74E6B01305D /* SenzallsTowerApp.swift */; };
+		EF1F4BAFFD4666113196B602 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47B871B61BC23512A434A561 /* AboutView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +26,7 @@
 		19DD6CDF056EFAE0202B5EA7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2B647A6D41E7D74E6B01305D /* SenzallsTowerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SenzallsTowerApp.swift; sourceTree = "<group>"; };
 		447BBBFEDA30653586C222D9 /* SenzallsTower.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SenzallsTower.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		47B871B61BC23512A434A561 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		568DA982C4BDD0B8F86D8FBC /* EngineSchemeHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineSchemeHandler.swift; sourceTree = "<group>"; };
 		A54A7BB45817025D1D700367 /* SaveStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveStore.swift; sourceTree = "<group>"; };
 		BAAE8CE74A1052FB68D08F4B /* SenzallsTower.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SenzallsTower.entitlements; sourceTree = "<group>"; };
@@ -56,6 +58,7 @@
 		92CE7688C272007DEAB2768A /* SenzallsTower */ = {
 			isa = PBXGroup;
 			children = (
+				47B871B61BC23512A434A561 /* AboutView.swift */,
 				D26E45062A57F155BA3C1AE1 /* AppMenu.swift */,
 				C820376C60777DBFB59C0143 /* Assets.xcassets */,
 				BBD8DE461D1A1E8892484A31 /* Bridge.swift */,
@@ -179,6 +182,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EF1F4BAFFD4666113196B602 /* AboutView.swift in Sources */,
 				C37DB07788EE521F58C663E7 /* AppMenu.swift in Sources */,
 				143B057AB0AC8561B425A555 /* Bridge.swift in Sources */,
 				101F5E6660D697B1C860BBCC /* EngineSchemeHandler.swift in Sources */,

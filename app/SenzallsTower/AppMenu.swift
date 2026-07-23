@@ -10,75 +10,10 @@ private func fire(_ action: String) {
     NotificationCenter.default.post(name: .senzallMenuAction, object: action)
 }
 
-private func appVersion() -> String {
-    let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
-    let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
-    return "\(v) (\(b))"
-}
-
-/// A rich, native About panel with credits, attribution, and how-to.
+/// Show the custom About window (see AboutView).
+@MainActor
 func showAboutPanel() {
-    let credits = NSMutableAttributedString()
-    func line(_ s: String, bold: Bool = false, size: CGFloat = 11) {
-        let font = bold ? NSFont.boldSystemFont(ofSize: size) : NSFont.systemFont(ofSize: size)
-        credits.append(NSAttributedString(string: s + "\n", attributes: [
-            .font: font,
-            .foregroundColor: NSColor.labelColor,
-        ]))
-    }
-    line("A skyscraper-building simulation: stack offices, condos, hotels, shops,")
-    line("and restaurants; keep tenants happy and elevators moving; grow from one")
-    line("star to a five-star tower without going bankrupt.\n")
-
-    line("How to play", bold: true)
-    line("• Pick a facility from the BUILD panel and click to place it.")
-    line("• Start with a Lobby on the ground floor, then add floors, elevators, rooms.")
-    line("• Speed: ⌘1 / ⌘2 / ⌘3   Pause: ⌘P   Save: ⌘S   Load: ⌘O   New: ⌘N")
-    line("• Tune sound per-effect in the Sound menu; scale the UI in Settings (⌘,).")
-    line("• Watch for VIP guests like Senzall.\n")
-
-    line("A fork — and what we changed", bold: true)
-    line("Senzall's Tower is an independent fork that turns a browser-based,")
-    line("multiplayer game into a polished, offline single-player Mac app. Our work:")
-    line("• Ported the authoritative multiplayer server loop to run in-process, so")
-    line("  the game is fully offline — no account, no network, no server.")
-    line("• Wrapped it in a native macOS app (SwiftUI + WKWebView) with a custom")
-    line("  local content origin, native menus, Save/Load, and an app icon.")
-    line("• Added Settings (interface scaling), a per-effect Sound menu, cheats,")
-    line("  a named VIP roster, and Mac-native typography & layout polish.")
-    line("• Signed with a Developer ID and notarized by Apple.\n")
-
-    line("Credits", bold: true)
-    line("Simulation engine: tower-together by Patrick Hulin (MIT license) —")
-    line("github.com/phulin/tower-together. A clean-room reimplementation that")
-    line("ships none of the original game's assets or code.")
-    line("")
-    line("Inspired by the classic tower-building sim SimTower (\"The Tower\", 1994)")
-    line("created by Yoot Saito / OPeNBook and published by Maxis, and its sequel")
-    line("Yoot Tower (1998). Senzall's Tower is not affiliated with, endorsed by,")
-    line("or derived from the code or assets of those games; \"SimTower\" and")
-    line("\"Yoot Tower\" are trademarks of their respective owners.\n")
-
-    line("A note from the maker", bold: true)
-    line("SimTower and Yoot Tower are among my favorite games of all time. I built")
-    line("this version for myself — to play my favorite game — and I wanted to")
-    line("share it with anyone who'd like to play it too. It's a privilege to work")
-    line("on it with Claude, bringing a new implementation to the Mac using modern")
-    line("AI tools.\n")
-
-    line("Offline & private", bold: true)
-    line("Runs entirely on your Mac — no account, no network, no tracking.")
-
-    let options: [NSApplication.AboutPanelOptionKey: Any] = [
-        .applicationName: "Senzall's Tower",
-        .applicationVersion: appVersion(),
-        .version: "",
-        .credits: credits,
-        NSApplication.AboutPanelOptionKey(rawValue: "Copyright"):
-            "An independent game. “SimTower”/“Yoot Tower” are trademarks of their owners.",
-    ]
-    NSApp.activate(ignoringOtherApps: true)
-    NSApp.orderFrontStandardAboutPanel(options: options)
+    AboutWindow.show()
 }
 
 /// Native menu bar for Senzall's Tower.
