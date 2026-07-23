@@ -1,4 +1,4 @@
-import { Pause, Star, Volume2, VolumeX } from "lucide-react";
+import { Pause, Star, Volume2, VolumeX, ZoomIn, ZoomOut } from "lucide-react";
 import {
 	forwardRef,
 	memo,
@@ -8,6 +8,7 @@ import {
 	useState,
 } from "react";
 import { IS_LOCAL } from "../local/localBootstrap";
+import { senzall } from "../local/nativeBridge";
 import type { ConnectionStatus } from "../types";
 import { DAY_TICK_MAX } from "../types";
 import { gameScreenStyles as styles } from "./gameScreenStyles";
@@ -360,6 +361,26 @@ export const GameToolbar = memo(
 					>
 						{soundMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
 					</button>
+					<span style={styles.speedButtons}>
+						<button
+							type="button"
+							style={{ ...styles.speedButton, ...styles.muteButton }}
+							aria-label="Zoom out"
+							title="Zoom out"
+							onClick={() => senzall.zoom(-0.1)}
+						>
+							<ZoomOut size={14} />
+						</button>
+						<button
+							type="button"
+							style={{ ...styles.speedButton, ...styles.muteButton }}
+							aria-label="Zoom in"
+							title="Zoom in"
+							onClick={() => senzall.zoom(0.1)}
+						>
+							<ZoomIn size={14} />
+						</button>
+					</span>
 				</div>
 
 				{/* CENTER: economy — cash, population, star rating */}

@@ -30,6 +30,10 @@ interface ChangeEntry {
 // Newest first. Bump this with each release.
 const CHANGELOG: ChangeEntry[] = [
 	{
+		version: "1.0.17",
+		notes: ["Zoom in / out buttons on the toolbar (next to mute)."],
+	},
+	{
 		version: "1.0.16",
 		notes: [
 			"Emergency prompts (bomb/fire) now pause the clock until you answer.",

@@ -44,6 +44,18 @@ export const senzall = {
 	isNative: (): boolean => nativeHost() !== null,
 	/** Open the native About / details panel. */
 	showAbout: () => post("showAbout"),
+	/** Zoom the interface in/out by delta (native: pageZoom; browser: CSS zoom). */
+	zoom: (delta: number) => {
+		if (nativeHost()) {
+			void post("zoom", { delta });
+			return;
+		}
+		const el = document.documentElement as HTMLElement & {
+			style: { zoom?: string };
+		};
+		const cur = Number.parseFloat(el.style.zoom || "1") || 1;
+		el.style.zoom = String(Math.min(1.6, Math.max(0.8, cur + delta)));
+	},
 	save: (slot: string, state: string) => post("save", { slot, state }),
 	autosave: (state: string) => post("autosave", { slot: "autosave", state }),
 	load: (slot: string) => post("load", { slot }) as Promise<string | null>,

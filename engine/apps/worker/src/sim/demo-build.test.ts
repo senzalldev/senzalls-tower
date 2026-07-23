@@ -1,5 +1,8 @@
-// Demo/screenshot tower builder. Not a real test — it constructs towers in the
-// sim and writes snapshot JSON to /tmp/senzall-demo/ for screenshot capture.
+// Demo/screenshot tower builder. Not a real test — it constructs genuinely
+// well-designed, occupied towers in the sim and writes snapshot JSON to
+// /tmp/senzall-demo/ for screenshot capture. Stars are NOT forced: we build
+// real towers (dense floors, working elevator with cars, services) and let the
+// simulation populate and rate them, so screenshots reflect actual content.
 // Run: npx vitest run apps/worker/src/sim/demo-build.test.ts
 import { mkdirSync, writeFileSync } from "node:fs";
 import { describe, it } from "vitest";
@@ -9,88 +12,126 @@ import { createInitialSnapshot } from "./snapshot";
 
 const OUT = "/tmp/senzall-demo";
 const GROUND = 109; // grid y for display floor 0
-const yOf = (floor: number) => GROUND - floor; // display floor -> grid y
+const yOf = (floor: number) => GROUND - floor;
 
-interface Placement {
-	tile: string;
-	x: number;
-	floor: number;
+// Building envelope (grid x). Two elevator banks so every room is close to a
+// shaft (SimTower rule: distant rooms = long trips = vacancies). Rooms fill the
+// bays between/around the elevators; stairs on the far right for short hops.
+const LEFT = 128;
+const RIGHT = 248;
+const ELEV_A = 128; // left elevator (width 4) -> serves bay A
+const ELEV_B = 186; // mid elevator (width 4) -> serves bays around it
+const STAIR_X = 240; // stairs (width 8)
+// Room bays (kept short so walks stay under the stress clamp):
+const BAYS: Array<[number, number]> = [
+	[133, 181], // between left elevator and mid elevator
+	[191, 239], // between mid elevator and stairs
+];
+
+type Sim = ReturnType<typeof TowerSim.fromSnapshot>;
+
+function place(sim: Sim, tile: string, x: number, floor: number): boolean {
+	return sim.submitCommand({
+		type: "place_tile",
+		x,
+		y: yOf(floor),
+		tileType: tile,
+	} as never).accepted;
 }
 
-function build(name: string, stars: 1 | 2 | 3 | 4 | 5, plan: Placement[], ticks: number) {
-	const sim = TowerSim.fromSnapshot(
-		createInitialSnapshot("demo", "Senzall's Tower", STARTING_CASH),
-	);
-	sim.freeBuild = true;
-	let placed = 0;
-	const reasons = new Map<string, number>();
-	for (const p of plan) {
-		const r = sim.submitCommand({
-			type: "place_tile",
-			x: p.x,
-			y: yOf(p.floor),
-			tileType: p.tile,
-		} as never);
-		if (r.accepted) placed++;
-		else reasons.set(r.reason ?? "?", (reasons.get(r.reason ?? "?") ?? 0) + 1);
-	}
-	sim.setStarCount(stars);
-	for (let i = 0; i < ticks; i++) sim.step();
-	const snap = sim.saveState();
-	writeFileSync(`${OUT}/${name}.json`, JSON.stringify(snap));
-	writeFileSync(
-		`${OUT}/${name}.stats.txt`,
-		`stars=${stars} placed=${placed}/${plan.length} cash=${sim.cash} pop=${sim.currentPopulation} rejects=${JSON.stringify(Object.fromEntries(reasons))}`,
-	);
-}
-
-// Layout: a lobby-wide span; an elevator on the left; floors laid bottom-up for
-// structural support before rooms are placed on them.
-function tower(stars: 1 | 2 | 3 | 4 | 5, floors: number): Placement[] {
-	const p: Placement[] = [];
-	const left = 130;
-	const right = 250;
-	const elevX = 132;
-	const roomX = 138; // just right of the 4-wide elevator
-	// Ground lobby.
-	for (let x = left; x <= right; x++) p.push({ tile: "lobby", x, floor: 0 });
-	// Build each floor bottom-up: lay the floor slab, extend the elevator + a
-	// stairwell (deterministic walkable route so units are reachable), then rooms.
-	const stairX = 232;
-	for (let f = 1; f <= floors; f++) {
-		for (let x = left; x <= right; x++) p.push({ tile: "floor", x, floor: f });
-		p.push({ tile: "elevator", x: elevX, floor: f });
-		// Stairs connect the floor below to this one.
-		p.push({ tile: "stairs", x: stairX, floor: f - 1 });
-		if (stars >= 3 && f % 6 === 0) {
-			p.push({ tile: "hotelSuite", x: roomX, floor: f });
-			p.push({ tile: "hotelSuite", x: roomX + 10, floor: f });
-		} else if (stars >= 2 && f % 3 === 0) {
-			p.push({ tile: "condo", x: roomX, floor: f });
-			p.push({ tile: "condo", x: roomX + 16, floor: f });
-		} else {
-			p.push({ tile: "office", x: roomX, floor: f });
-			p.push({ tile: "office", x: roomX + 9, floor: f });
-			p.push({ tile: "office", x: roomX + 18, floor: f });
-			p.push({ tile: "office", x: roomX + 27, floor: f });
+// Fill each room bay with a repeated room type (best-effort).
+function fillFloor(sim: Sim, tile: string, width: number, floor: number) {
+	for (const [start, end] of BAYS) {
+		for (let x = start; x + width - 1 <= end; x += width) {
+			place(sim, tile, x, floor);
 		}
 	}
-	// Commercial on low floors for busier towers.
-	if (stars >= 2) p.push({ tile: "fastFood", x: roomX, floor: 1 });
-	if (stars >= 4) {
-		p.push({ tile: "retail", x: roomX + 16, floor: 1 });
-		p.push({ tile: "restaurant", x: roomX, floor: 2 });
+}
+
+function addCars(sim: Sim, elevX: number, n: number) {
+	for (let i = 0; i < n; i++) {
+		sim.submitCommand({
+			type: "add_elevator_car",
+			x: elevX,
+			y: yOf(1),
+		} as never);
 	}
-	return p;
+}
+
+function buildGrand(sim: Sim, floors: number) {
+	// Ground lobby, wide.
+	for (let x = LEFT; x <= RIGHT; x++) place(sim, "lobby", x, 0);
+	for (let f = 1; f <= floors; f++) {
+		for (let x = LEFT; x <= RIGHT; x++) place(sim, "floor", x, f);
+		place(sim, "elevator", ELEV_A, f);
+		place(sim, "elevator", ELEV_B, f);
+		place(sim, "stairs", STAIR_X, f - 1);
+		if (f <= 3) {
+			// Commercial near the lobby: a lively mix.
+			const strip = ["fastFood", "retail", "restaurant", "retail"];
+			for (const [start, end] of BAYS) {
+				let x = start;
+				let i = 0;
+				const widths: Record<string, number> = {
+					fastFood: 16,
+					retail: 12,
+					restaurant: 24,
+				};
+				while (x < end) {
+					const tile = strip[i % strip.length];
+					if (x + widths[tile] - 1 > end) break;
+					place(sim, tile, x, f);
+					x += widths[tile];
+					i++;
+				}
+			}
+		} else if (f <= Math.floor(floors * 0.6)) {
+			fillFloor(sim, "office", 9, f); // office band
+		} else if (f % 4 === 0) {
+			fillFloor(sim, "hotelSuite", 10, f); // occasional hotel floor
+		} else {
+			fillFloor(sim, "condo", 16, f); // residential band
+		}
+	}
+	// Services (satisfy 2★–4★ conditions + realism).
+	place(sim, "security", 133, 4);
+	place(sim, "medical", 133, 5);
+	place(sim, "recyclingCenter", LEFT, -2);
+	place(sim, "parking", LEFT, -1);
+	place(sim, "parking", LEFT + 4, -1);
+	place(sim, "metro", 140, -3);
+	// Real elevator capacity — up to 8 cars per shaft.
+	addCars(sim, ELEV_A, 7);
+	addCars(sim, ELEV_B, 7);
+}
+
+function summarize(sim: Sim) {
+	return `pop=${sim.currentPopulation} star=${sim.starCount} cash=${sim.cash}`;
 }
 
 describe("demo tower builder", () => {
-	it("writes demo snapshots", () => {
+	it("writes genuinely-built demo snapshots", { timeout: 180000 }, () => {
 		mkdirSync(OUT, { recursive: true });
-		build("star1", 1, tower(1, 3), 9000);
-		build("star2", 2, tower(2, 5), 9000);
-		build("star3", 3, tower(3, 8), 9000);
-		build("star4", 4, tower(4, 12), 9000);
-		build("star5", 5, tower(5, 16), 10000);
+		// One flagship tower; capture it at several growth stages so the shots
+		// show a real progression of the SAME tower filling up and being rated.
+		const sim = TowerSim.fromSnapshot(
+			createInitialSnapshot("demo", "Senzall's Tower", STARTING_CASH),
+		);
+		sim.freeBuild = true;
+		buildGrand(sim, 28);
+
+		const stages = [400, 1200, 3000, 6000, 12000];
+		const names = ["early", "growing", "busy", "bustling", "grand"];
+		let stepped = 0;
+		const log: string[] = [];
+		for (let i = 0; i < stages.length; i++) {
+			while (stepped < stages[i]) {
+				sim.step();
+				stepped++;
+			}
+			writeFileSync(`${OUT}/${names[i]}.json`, JSON.stringify(sim.saveState()));
+			log.push(`[${names[i]}] ticks=${stepped} ${summarize(sim)}`);
+		}
+		writeFileSync(`${OUT}/stats.txt`, log.join("\n"));
 	});
 });

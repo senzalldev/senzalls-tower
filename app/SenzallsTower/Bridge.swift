@@ -148,6 +148,13 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         case "showAbout":
             showAboutPanel()
             resolve(id, payload: "null")
+        case "zoom":
+            let delta = (body["delta"] as? Double) ?? 0
+            let cur = (UserDefaults.standard.object(forKey: SettingsKeys.uiScale) as? Double) ?? 1.0
+            let next = min(1.6, max(0.8, cur + delta))
+            UserDefaults.standard.set(next, forKey: SettingsKeys.uiScale)
+            webView?.pageZoom = CGFloat(next)
+            resolve(id, payload: "null")
         default:
             resolve(id, payload: "null")
         }
