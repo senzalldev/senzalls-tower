@@ -4,6 +4,10 @@ import SwiftUI
 struct SenzallsTowerApp: App {
     @AppStorage(SettingsKeys.uiScale) private var uiScale: Double = 1.0
 
+    init() {
+        SettingsKeys.registerDefaults()
+    }
+
     var body: some Scene {
         WindowGroup("Senzall's Tower") {
             GameWebView(uiScale: uiScale)

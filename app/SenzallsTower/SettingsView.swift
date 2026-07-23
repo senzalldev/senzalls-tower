@@ -6,6 +6,25 @@ enum SettingsKeys {
     static let uiScale = "uiScale"
     static let launchSpeed = "launchSpeed"
     static let muteOnLaunch = "muteOnLaunch"
+    // Sound-effect categories (all default on). Keyed so Bridge can read them.
+    static let sndAmbience = "sndAmbience"
+    static let sndTransport = "sndTransport"
+    static let sndCrowd = "sndCrowd"
+    static let sndOffice = "sndOffice"
+    static let sndFood = "sndFood"
+    static let sndLodging = "sndLodging"
+    static let sndRetail = "sndRetail"
+    static let sndServices = "sndServices"
+    static let sndCash = "sndCash"
+
+    /// Register defaults so unset categories read as ON.
+    static func registerDefaults() {
+        UserDefaults.standard.register(defaults: [
+            sndAmbience: true, sndTransport: true, sndCrowd: true, sndOffice: true,
+            sndFood: true, sndLodging: true, sndRetail: true, sndServices: true,
+            sndCash: true,
+        ])
+    }
 }
 
 struct SettingsView: View {

@@ -26,19 +26,41 @@ func showAboutPanel() {
             .foregroundColor: NSColor.labelColor,
         ]))
     }
-    line("Build a skyscraper of offices, condos, hotels, shops, and restaurants —", size: 11)
-    line("keep tenants happy and the elevators moving without going bankrupt.\n")
+    line("A skyscraper-building simulation: stack offices, condos, hotels, shops,")
+    line("and restaurants; keep tenants happy and elevators moving; grow from one")
+    line("star to a five-star tower without going bankrupt.\n")
+
     line("How to play", bold: true)
     line("• Pick a facility from the BUILD panel and click to place it.")
-    line("• Start with a Lobby on the ground floor, then add floors, elevators, and rooms.")
+    line("• Start with a Lobby on the ground floor, then add floors, elevators, rooms.")
     line("• Speed: ⌘1 / ⌘2 / ⌘3   Pause: ⌘P   Save: ⌘S   Load: ⌘O   New: ⌘N")
+    line("• Tune sound per-effect in the Sound menu; scale the UI in Settings (⌘,).")
     line("• Watch for VIP guests like Senzall.\n")
-    line("Offline & private", bold: true)
-    line("Runs entirely on your Mac — no account, no network, no tracking.\n")
+
+    line("A fork — and what we changed", bold: true)
+    line("Senzall's Tower is an independent fork that turns a browser-based,")
+    line("multiplayer game into a polished, offline single-player Mac app. Our work:")
+    line("• Ported the authoritative multiplayer server loop to run in-process, so")
+    line("  the game is fully offline — no account, no network, no server.")
+    line("• Wrapped it in a native macOS app (SwiftUI + WKWebView) with a custom")
+    line("  local content origin, native menus, Save/Load, and an app icon.")
+    line("• Added Settings (interface scaling), a per-effect Sound menu, cheats,")
+    line("  a named VIP roster, and Mac-native typography & layout polish.")
+    line("• Signed with a Developer ID and notarized by Apple.\n")
+
     line("Credits", bold: true)
-    line("Simulation engine: tower-together (MIT) © 2026 Patrick Hulin —")
-    line("github.com/phulin/tower-together. A clean-room reimplementation; no")
-    line("original SimTower / Yoot Tower assets or code are included.")
+    line("Simulation engine: tower-together by Patrick Hulin (MIT license) —")
+    line("github.com/phulin/tower-together. A clean-room reimplementation that")
+    line("ships none of the original game's assets or code.")
+    line("")
+    line("Inspired by the classic tower-building sim SimTower (\"The Tower\", 1994)")
+    line("created by Yoot Saito / OPeNBook and published by Maxis, and its sequel")
+    line("Yoot Tower (1998). Senzall's Tower is not affiliated with, endorsed by,")
+    line("or derived from the code or assets of those games; \"SimTower\" and")
+    line("\"Yoot Tower\" are trademarks of their respective owners.\n")
+
+    line("Offline & private", bold: true)
+    line("Runs entirely on your Mac — no account, no network, no tracking.")
 
     let options: [NSApplication.AboutPanelOptionKey: Any] = [
         .applicationName: "Senzall's Tower",
@@ -54,6 +76,16 @@ func showAboutPanel() {
 
 /// Native menu bar for Senzall's Tower.
 struct SenzallCommands: Commands {
+    @AppStorage(SettingsKeys.sndAmbience) private var sndAmbience = true
+    @AppStorage(SettingsKeys.sndTransport) private var sndTransport = true
+    @AppStorage(SettingsKeys.sndCrowd) private var sndCrowd = true
+    @AppStorage(SettingsKeys.sndOffice) private var sndOffice = true
+    @AppStorage(SettingsKeys.sndFood) private var sndFood = true
+    @AppStorage(SettingsKeys.sndLodging) private var sndLodging = true
+    @AppStorage(SettingsKeys.sndRetail) private var sndRetail = true
+    @AppStorage(SettingsKeys.sndServices) private var sndServices = true
+    @AppStorage(SettingsKeys.sndCash) private var sndCash = true
+
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
             Button("About Senzall's Tower") { showAboutPanel() }
@@ -92,6 +124,28 @@ struct SenzallCommands: Commands {
             Divider()
             Button("Summon VIP") { fire("vip") }
                 .keyboardShortcut("v", modifiers: [.command, .shift])
+        }
+        CommandMenu("Sound") {
+            Toggle("Ambience & Rooster", isOn: $sndAmbience)
+            Toggle("Cash Register", isOn: $sndCash)
+            Divider()
+            Toggle("Elevators & Transport", isOn: $sndTransport)
+            Toggle("Crowds & Lobbies", isOn: $sndCrowd)
+            Toggle("Offices", isOn: $sndOffice)
+            Toggle("Food & Restaurants", isOn: $sndFood)
+            Toggle("Hotels & Condos", isOn: $sndLodging)
+            Toggle("Shops", isOn: $sndRetail)
+            Toggle("Services", isOn: $sndServices)
+            Divider()
+            Button("Enable All Sounds") {
+                for key in [
+                    SettingsKeys.sndAmbience, SettingsKeys.sndCash, SettingsKeys.sndTransport,
+                    SettingsKeys.sndCrowd, SettingsKeys.sndOffice, SettingsKeys.sndFood,
+                    SettingsKeys.sndLodging, SettingsKeys.sndRetail, SettingsKeys.sndServices,
+                ] {
+                    UserDefaults.standard.set(true, forKey: key)
+                }
+            }
         }
     }
 }

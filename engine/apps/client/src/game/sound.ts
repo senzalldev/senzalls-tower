@@ -162,6 +162,42 @@ export class SoundManager {
 	private prevHour: number | null = null;
 	private destroyed = false;
 	private muted = false;
+	// Per-category toggles (Sound menu). Families default on.
+	private disabledFamilies = new Set<SoundFamily>();
+	private ambienceEnabled = true;
+	private cashEnabled = true;
+
+	/** Apply the Sound menu configuration (per-effect on/off). */
+	applyConfig(config: {
+		ambience?: boolean;
+		cash?: boolean;
+		families?: Partial<Record<SoundFamily, boolean>>;
+	}): void {
+		if (config.ambience !== undefined) this.ambienceEnabled = config.ambience;
+		if (config.cash !== undefined) this.cashEnabled = config.cash;
+		if (config.families) {
+			for (const [family, enabled] of Object.entries(config.families)) {
+				if (enabled) this.disabledFamilies.delete(family as SoundFamily);
+				else this.disabledFamilies.add(family as SoundFamily);
+			}
+		}
+		this.applyAmbienceState();
+	}
+
+	private applyAmbienceState(): void {
+		const silent = this.muted || !this.ambienceEnabled;
+		this.morningAmbience.muted = silent;
+		this.afternoonAmbience.muted = silent;
+		this.nightAmbience.muted = silent;
+		this.rooster.muted = silent;
+		if (silent) {
+			this.setLoopPlaying(this.morningAmbience, false);
+			this.setLoopPlaying(this.afternoonAmbience, false);
+			this.setLoopPlaying(this.nightAmbience, false);
+		} else if (this.currentHour !== null) {
+			this.updateAmbience(this.currentHour);
+		}
+	}
 
 	constructor() {
 		this.morningAmbience = makeLoop(MORNING_AMBIENCE_SRC, AMBIENCE_VOLUME);
@@ -213,16 +249,13 @@ export class SoundManager {
 			this.activeSources.clear();
 			this.kachingPending = false;
 		}
-		this.morningAmbience.muted = muted;
-		this.afternoonAmbience.muted = muted;
-		this.nightAmbience.muted = muted;
-		this.rooster.muted = muted;
+		this.applyAmbienceState();
 	}
 
 	updateAmbience(hour: number): void {
 		if (this.destroyed) return;
 		this.currentHour = hour;
-		if (this.muted) {
+		if (this.muted || !this.ambienceEnabled) {
 			this.setLoopPlaying(this.morningAmbience, false);
 			this.setLoopPlaying(this.afternoonAmbience, false);
 			this.setLoopPlaying(this.nightAmbience, false);
@@ -260,7 +293,7 @@ export class SoundManager {
 	 * the count-scaled cooldown and visible-family weighting.
 	 */
 	triggerCash(): void {
-		if (this.destroyed || this.muted) return;
+		if (this.destroyed || this.muted || !this.cashEnabled) return;
 		this.kachingPending = true;
 	}
 
@@ -286,6 +319,7 @@ export class SoundManager {
 		const housekeepingActive = this.isHousekeepingActive();
 		const transportActive = transport.up || transport.down;
 		const familyAllowed = (family: SoundFamily): boolean => {
+			if (this.disabledFamilies.has(family)) return false;
 			if (family === "housekeeping") return housekeepingActive;
 			if (family === "transport") return transportActive;
 			return true;

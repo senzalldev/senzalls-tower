@@ -6,6 +6,7 @@ import {
 	Scale,
 } from "phaser";
 import { memo, useEffect, useRef } from "react";
+import { senzall } from "../local/nativeBridge";
 import type { SimStateData } from "../types";
 import { GameScene } from "./GameScene";
 import {
@@ -173,6 +174,11 @@ export const PhaserGame = memo(function PhaserGame({
 	useEffect(() => {
 		sceneRef.current?.setSoundMuted(soundMuted);
 	}, [soundMuted, sceneRef]);
+
+	// Apply per-effect Sound menu config from the native shell.
+	useEffect(() => {
+		senzall.onSound((config) => sceneRef.current?.setSoundConfig(config));
+	}, [sceneRef]);
 
 	return <div ref={containerRef} style={{ width: "100%", height: "100%" }} />;
 });

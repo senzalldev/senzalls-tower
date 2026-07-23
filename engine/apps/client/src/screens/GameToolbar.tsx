@@ -8,6 +8,7 @@ import {
 	useState,
 } from "react";
 import { IS_LOCAL } from "../local/localBootstrap";
+import { senzall } from "../local/nativeBridge";
 import type { ConnectionStatus } from "../types";
 import { DAY_TICK_MAX } from "../types";
 import { gameScreenStyles as styles } from "./gameScreenStyles";
@@ -306,7 +307,14 @@ export const GameToolbar = memo(
 					) : (
 						!isCompact &&
 						(IS_LOCAL ? (
-							<span style={styles.towerLabel}>{towerName || towerId}</span>
+							<button
+								type="button"
+								style={styles.towerLabel}
+								title="About Senzall's Tower — details & credits"
+								onClick={() => senzall.showAbout()}
+							>
+								{towerName || towerId}
+							</button>
 						) : (
 							<button
 								type="button"

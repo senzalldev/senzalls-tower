@@ -16,12 +16,54 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         didSet {
             webView?.navigationDelegate = self
             observeMenuActions()
+            observeDefaults()
         }
+    }
+
+    private var defaultsObserver: NSObjectProtocol?
+
+    private func observeDefaults() {
+        if let existing = defaultsObserver {
+            NotificationCenter.default.removeObserver(existing)
+        }
+        defaultsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.pushSoundConfig()
+        }
+    }
+
+    /// Read the Sound-menu categories from UserDefaults and push to the web.
+    func pushSoundConfig() {
+        let d = UserDefaults.standard
+        func on(_ k: String) -> Bool { d.object(forKey: k) == nil ? true : d.bool(forKey: k) }
+        let services = on(SettingsKeys.sndServices)
+        let config: [String: Any] = [
+            "ambience": on(SettingsKeys.sndAmbience),
+            "cash": on(SettingsKeys.sndCash),
+            "families": [
+                "transport": on(SettingsKeys.sndTransport),
+                "crowd": on(SettingsKeys.sndCrowd),
+                "office": on(SettingsKeys.sndOffice),
+                "food": on(SettingsKeys.sndFood),
+                "lodging": on(SettingsKeys.sndLodging),
+                "retail": on(SettingsKeys.sndRetail),
+                "medical": services,
+                "housekeeping": services,
+                "security": services,
+                "parking": services,
+            ],
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: config),
+              let json = String(data: data, encoding: .utf8) else { return }
+        webView?.evaluateJavaScript(
+            "window.senzall && window.senzall._sound && window.senzall._sound(\(json))")
     }
 
     // MARK: - Navigation diagnostics
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        pushSoundConfig()
         // ES modules execute after didFinish, so probe React mount a bit later.
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak webView] in
             let probe = """
@@ -103,6 +145,9 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         case "list":
             let data = (try? JSONSerialization.data(withJSONObject: SaveStore.list())) ?? Data("[]".utf8)
             resolve(id, payload: String(data: data, encoding: .utf8) ?? "[]")
+        case "showAbout":
+            showAboutPanel()
+            resolve(id, payload: "null")
         default:
             resolve(id, payload: "null")
         }

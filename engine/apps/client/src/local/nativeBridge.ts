@@ -9,9 +9,17 @@ interface WebkitBridge {
 	messageHandlers: { senzall: { postMessage(message: unknown): void } };
 }
 
+export interface SoundConfig {
+	ambience?: boolean;
+	cash?: boolean;
+	families?: Record<string, boolean>;
+}
+
 const pending = new Map<number, Pending>();
 let seq = 0;
 let menuHandler: (action: string) => void = () => {};
+let soundHandler: ((config: SoundConfig) => void) | null = null;
+let lastSoundConfig: SoundConfig | null = null;
 
 function nativeHost(): WebkitBridge | null {
 	const wk = (window as unknown as { webkit?: WebkitBridge }).webkit;
@@ -34,6 +42,8 @@ function post(
 export const senzall = {
 	/** True when running inside the native macOS shell. */
 	isNative: (): boolean => nativeHost() !== null,
+	/** Open the native About / details panel. */
+	showAbout: () => post("showAbout"),
 	save: (slot: string, state: string) => post("save", { slot, state }),
 	autosave: (state: string) => post("autosave", { slot: "autosave", state }),
 	load: (slot: string) => post("load", { slot }) as Promise<string | null>,
@@ -42,12 +52,21 @@ export const senzall = {
 	onMenu: (handler: (action: string) => void) => {
 		menuHandler = handler;
 	},
+	/** Register the Sound-menu config handler; replays the last config if any. */
+	onSound: (handler: (config: SoundConfig) => void) => {
+		soundHandler = handler;
+		if (lastSoundConfig) handler(lastSoundConfig);
+	},
 	// ── Called from Swift via evaluateJavaScript ──
 	_resolve: (id: number, payload: unknown) => {
 		pending.get(id)?.(payload);
 		pending.delete(id);
 	},
 	_menu: (action: string) => menuHandler(action),
+	_sound: (config: SoundConfig) => {
+		lastSoundConfig = config;
+		soundHandler?.(config);
+	},
 };
 
 export function installNativeBridge(): void {

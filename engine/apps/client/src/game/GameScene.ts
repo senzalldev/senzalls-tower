@@ -346,6 +346,11 @@ export class GameScene extends Scene {
 	private cloudManager!: CloudManager;
 	private soundManager: SoundManager | null = null;
 	private soundMuted = false;
+	private pendingSoundConfig: {
+		ambience?: boolean;
+		cash?: boolean;
+		families?: Record<string, boolean>;
+	} | null = null;
 	private lastSoundUpdateMs = 0;
 	private visibleFamiliesScratch: Map<SoundFamily, number> = new Map();
 	private floorLabelBg!: GameObjects.Rectangle;
@@ -497,6 +502,15 @@ export class GameScene extends Scene {
 	setSoundMuted(muted: boolean): void {
 		this.soundMuted = muted;
 		this.soundManager?.setMuted(muted);
+	}
+
+	setSoundConfig(config: {
+		ambience?: boolean;
+		cash?: boolean;
+		families?: Record<string, boolean>;
+	}): void {
+		this.pendingSoundConfig = config;
+		this.soundManager?.applyConfig(config);
 	}
 
 	setLastPlaced(x: number, y: number, tileType: string): void {
@@ -1113,6 +1127,9 @@ export class GameScene extends Scene {
 		this.updateFloorLabels();
 		this.soundManager = new SoundManager();
 		this.soundManager.setMuted(this.soundMuted);
+		if (this.pendingSoundConfig) {
+			this.soundManager.applyConfig(this.pendingSoundConfig);
+		}
 		this.events.once("shutdown", () => {
 			this.soundManager?.destroy();
 			this.soundManager = null;
