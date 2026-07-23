@@ -12,9 +12,84 @@ interface Section {
 type HelpBlock =
 	| { kind: "p"; text: string }
 	| { kind: "h"; text: string }
-	| { kind: "ul"; items: string[] };
+	| { kind: "ul"; items: string[] }
+	| { kind: "changelog" };
+
+// App version injected by the native shell (window.__SENZALL_VERSION).
+const APP_VERSION =
+	typeof window !== "undefined"
+		? ((window as unknown as { __SENZALL_VERSION?: string })
+				.__SENZALL_VERSION ?? "")
+		: "";
+
+interface ChangeEntry {
+	version: string;
+	notes: string[];
+}
+
+// Newest first. Bump this with each release.
+const CHANGELOG: ChangeEntry[] = [
+	{
+		version: "1.0.9",
+		notes: [
+			"Added this What's New panel and an About-the-guide note.",
+			"Added a Guide button on the build panel header.",
+		],
+	},
+	{
+		version: "1.0.8",
+		notes: ["Added the in-app Help & Guide (this window)."],
+	},
+	{
+		version: "1.0.6",
+		notes: [
+			"Per-effect Sound menu with on/off checkmarks.",
+			"Click the tower name for the full About panel and credits.",
+		],
+	},
+	{
+		version: "1.0.5",
+		notes: ["Uniform, evenly-sized build-panel buttons."],
+	},
+	{
+		version: "1.0.4",
+		notes: [
+			"Mac-native typography and larger, clearer text.",
+			"Settings window (⌘,) with interface scaling, launch speed, start muted.",
+		],
+	},
+	{
+		version: "1.0.3",
+		notes: ["Cheats menu, named VIP roster, and an app icon."],
+	},
+	{
+		version: "1.0.1",
+		notes: ["Native title-bar polish; signed & notarized for Gatekeeper."],
+	},
+	{
+		version: "1.0.0",
+		notes: ["First release — offline single-player, native macOS."],
+	},
+];
 
 const SECTIONS: Section[] = [
+	{
+		id: "whatsnew",
+		title: "What's New",
+		body: [
+			{
+				kind: "p",
+				text: APP_VERSION
+					? `You're playing version ${APP_VERSION}. Recent updates:`
+					: "Recent updates to Senzall's Tower:",
+			},
+			{ kind: "changelog" },
+			{
+				kind: "p",
+				text: "About this guide: everything here is written for this Mac edition and its actual mechanics. Open it any time from the ? button, the Guide button on the build panel, or Help → Senzall's Tower Guide (⌘?).",
+			},
+		],
+	},
 	{
 		id: "start",
 		title: "Getting Started",
@@ -277,6 +352,11 @@ const SECTIONS: Section[] = [
 				kind: "p",
 				text: "Simulation engine: tower-together by Patrick Hulin (MIT) — a clean-room reimplementation that ships none of the original game's assets or code. Inspired by the classic SimTower (“The Tower”, 1994) by Yoot Saito / OPeNBook, published by Maxis, and its sequel Yoot Tower. “SimTower” and “Yoot Tower” are trademarks of their respective owners; Senzall's Tower is not affiliated with or derived from them.",
 			},
+			{ kind: "h", text: "A note from the maker" },
+			{
+				kind: "p",
+				text: "SimTower and Yoot Tower are among my favorite games of all time. I built this version for myself — to play my favorite game — and I wanted to share it with anyone who'd like to play it too. It's a privilege to work on it with Claude, bringing a new implementation to the Mac using modern AI tools.",
+			},
 		],
 	},
 ];
@@ -355,6 +435,23 @@ function renderBlock(block: HelpBlock, key: number) {
 			<h3 key={key} style={S.h}>
 				{block.text}
 			</h3>
+		);
+	if (block.kind === "changelog")
+		return (
+			<div key={key}>
+				{CHANGELOG.map((entry) => (
+					<div key={entry.version} style={S.change}>
+						<div style={S.changeVersion}>v{entry.version}</div>
+						<ul style={S.ul}>
+							{entry.notes.map((note) => (
+								<li key={note} style={S.li}>
+									{note}
+								</li>
+							))}
+						</ul>
+					</div>
+				))}
+			</div>
 		);
 	return (
 		<ul key={key} style={S.ul}>
@@ -440,4 +537,12 @@ const S: Record<string, React.CSSProperties> = {
 	p: { fontSize: 14, lineHeight: 1.6, margin: "0 0 10px", color: "#c6d2de" },
 	ul: { margin: "0 0 10px", paddingLeft: 20 },
 	li: { fontSize: 14, lineHeight: 1.6, marginBottom: 4, color: "#c6d2de" },
+	change: { marginBottom: 12 },
+	changeVersion: {
+		fontSize: 13,
+		fontWeight: 700,
+		color: "#8fb4e0",
+		marginBottom: 2,
+		fontVariantNumeric: "tabular-nums",
+	},
 };

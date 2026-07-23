@@ -186,6 +186,22 @@ export const gameScreenStyles = {
 		justifyContent: "space-between",
 		marginBottom: 2,
 	},
+	buildHeaderLeft: {
+		display: "flex",
+		alignItems: "center",
+		gap: 8,
+	},
+	guideChip: {
+		padding: "2px 8px",
+		borderRadius: 5,
+		border: "1px solid rgba(123, 148, 170, 0.4)",
+		background: "rgba(255, 255, 255, 0.04)",
+		color: "#c9d6e2",
+		fontSize: 11,
+		fontWeight: 600,
+		cursor: "pointer",
+		lineHeight: "16px",
+	},
 	buildPanelClose: {
 		background: "transparent",
 		border: "none",

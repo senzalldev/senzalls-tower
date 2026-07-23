@@ -59,6 +59,13 @@ func showAboutPanel() {
     line("or derived from the code or assets of those games; \"SimTower\" and")
     line("\"Yoot Tower\" are trademarks of their respective owners.\n")
 
+    line("A note from the maker", bold: true)
+    line("SimTower and Yoot Tower are among my favorite games of all time. I built")
+    line("this version for myself — to play my favorite game — and I wanted to")
+    line("share it with anyone who'd like to play it too. It's a privilege to work")
+    line("on it with Claude, bringing a new implementation to the Mac using modern")
+    line("AI tools.\n")
+
     line("Offline & private", bold: true)
     line("Runs entirely on your Mac — no account, no network, no tracking.")
 

@@ -298,7 +298,19 @@ export const GameBuildPanel = memo(function GameBuildPanel({
 				aria-hidden={hidden}
 			>
 				<div style={styles.buildPanelHeader}>
-					<div style={styles.debugTitle}>Build</div>
+					<div style={styles.buildHeaderLeft}>
+						<div style={styles.debugTitle}>Build</div>
+						<button
+							type="button"
+							style={styles.guideChip}
+							title="Open the guide"
+							onClick={() =>
+								window.dispatchEvent(new CustomEvent("senzall:help"))
+							}
+						>
+							Guide
+						</button>
+					</div>
 					{isCompact && (
 						<button
 							type="button"
