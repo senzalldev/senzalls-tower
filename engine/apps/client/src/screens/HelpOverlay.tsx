@@ -30,6 +30,13 @@ interface ChangeEntry {
 // Newest first. Bump this with each release.
 const CHANGELOG: ChangeEntry[] = [
 	{
+		version: "1.0.11",
+		notes: [
+			"Larger About window that leads with credit to the game's author.",
+			"Expanded thanks: Patrick Hulin, Yoot Saito, and Don Hopkins.",
+		],
+	},
+	{
 		version: "1.0.9",
 		notes: [
 			"Added this What's New panel and an About-the-guide note.",
@@ -350,7 +357,11 @@ const SECTIONS: Section[] = [
 			},
 			{
 				kind: "p",
-				text: "Simulation engine: tower-together by Patrick Hulin (MIT) — a clean-room reimplementation that ships none of the original game's assets or code. Inspired by the classic SimTower (“The Tower”, 1994) by Yoot Saito / OPeNBook, published by Maxis, and its sequel Yoot Tower. “SimTower” and “Yoot Tower” are trademarks of their respective owners; Senzall's Tower is not affiliated with or derived from them.",
+				text: "Simulation engine: tower-together by Patrick Hulin (MIT) — a clean-room reimplementation that ships none of the original game's assets or code. This is his game; Senzall's Tower just packages it for the Mac.",
+			},
+			{
+				kind: "p",
+				text: "Inspired by the classic SimTower (“The Tower”, 1994) by Yoot Saito / OPeNBook, published by Maxis, and its sequel Yoot Tower (1998). Thanks to Yoot Saito for the games and for supporting their open-sourcing, and to Don Hopkins, who leads the effort to open-source and preserve the original sources. “SimTower” and “Yoot Tower” are trademarks of their respective owners; Senzall's Tower is not affiliated with or derived from them.",
 			},
 			{ kind: "h", text: "A note from the maker" },
 			{

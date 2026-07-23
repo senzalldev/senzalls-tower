@@ -55,9 +55,19 @@ struct AboutView: View {
                     para(
                         "The tower-building genre was defined by SimTower (“The Tower,” 1994), "
                             + "created by Yoot Saito and OPeNBook and published by Maxis, and its "
-                            + "sequel Yoot Tower (1998). Senzall's Tower is not affiliated with, "
-                            + "endorsed by, or derived from the code or assets of those games. "
-                            + "“SimTower” and “Yoot Tower” are trademarks of their respective owners.")
+                            + "sequel Yoot Tower (1998). Thank you, Yoot Saito, for the games that "
+                            + "inspired all of this — and for supporting their open-sourcing.")
+                    para(
+                        "Thanks also to Don Hopkins, who — working with Yoot Saito — leads the "
+                            + "effort to open-source and preserve the original sources for archival "
+                            + "and academic study.")
+                    link("Don Hopkins", "https://github.com/SimHacker")
+                    link("Yoot Tower preservation project",
+                         "https://github.com/YootTowerManagement/YootTower")
+                    para(
+                        "Senzall's Tower is not affiliated with, endorsed by, or derived from the "
+                            + "code or assets of those games. “SimTower” and “Yoot Tower” are "
+                            + "trademarks of their respective owners.")
                 }
 
                 // What this fork adds.
