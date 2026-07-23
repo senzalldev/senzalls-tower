@@ -11,6 +11,9 @@
   "assets": {
     "directory": "."
   },
+  "routes": [
+    { "pattern": "tower.senzall.com", "custom_domain": true }
+  ],
   "observability": {
     "enabled": true
   }
