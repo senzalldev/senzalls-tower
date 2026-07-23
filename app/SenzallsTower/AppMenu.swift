@@ -90,6 +90,10 @@ struct SenzallCommands: Commands {
         CommandGroup(replacing: .appInfo) {
             Button("About Senzall's Tower") { showAboutPanel() }
         }
+        CommandGroup(replacing: .help) {
+            Button("Senzall's Tower Guide") { fire("help") }
+                .keyboardShortcut("?", modifiers: .command)
+        }
         CommandGroup(replacing: .newItem) {
             Button("New Tower") { fire("newTower") }
                 .keyboardShortcut("n", modifiers: .command)

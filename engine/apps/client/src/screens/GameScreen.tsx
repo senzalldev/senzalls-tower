@@ -15,6 +15,7 @@ import type { GameToolbarClockHandle } from "./GameToolbar";
 import { GameToolbar } from "./GameToolbar";
 import { gameScreenStyles as styles } from "./gameScreenStyles";
 import type { Toast } from "./gameScreenTypes";
+import { HelpOverlay } from "./HelpOverlay";
 import { SimInspectionDialog } from "./SimInspectionDialog";
 import { StarUpgradeDialog } from "./StarUpgradeDialog";
 import { useTowerSession } from "./useTowerSession";
@@ -51,6 +52,7 @@ export function GameScreen({
 	const [soundMuted, setSoundMuted] = useState(
 		() => IS_LOCAL && launchSettings().muted,
 	);
+	const [helpOpen, setHelpOpen] = useState(false);
 	const [pendingShaftErase, setPendingShaftErase] = useState<{
 		x: number;
 		topY: number;
@@ -240,6 +242,13 @@ export function GameScreen({
 		}
 	}, [freeBuild, selectedTool, starCount]);
 
+	// Open the wiki when the native Help menu fires (see App onMenu -> event).
+	useEffect(() => {
+		const open = () => setHelpOpen(true);
+		window.addEventListener("senzall:help", open);
+		return () => window.removeEventListener("senzall:help", open);
+	}, []);
+
 	return (
 		<div style={styles.container}>
 			<GameToolbar
@@ -383,6 +392,17 @@ export function GameScreen({
 			/>
 
 			<GameToasts toasts={toasts} />
+
+			<button
+				type="button"
+				style={styles.helpButton}
+				title="Help & Guide"
+				aria-label="Open help and guide"
+				onClick={() => setHelpOpen(true)}
+			>
+				?
+			</button>
+			{helpOpen && <HelpOverlay onClose={() => setHelpOpen(false)} />}
 		</div>
 	);
 }

@@ -215,6 +215,9 @@ export function App() {
 				case "vip":
 					(active as LocalTowerSocket).summonVip();
 					break;
+				case "help":
+					window.dispatchEvent(new CustomEvent("senzall:help"));
+					break;
 			}
 		});
 
