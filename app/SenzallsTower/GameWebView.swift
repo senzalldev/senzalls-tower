@@ -65,12 +65,6 @@ struct GameWebView: NSViewRepresentable {
         webView.setValue(false, forKey: "drawsBackground")
         webView.allowsMagnification = false
 
-        // With the hidden title bar, let the window be dragged by its background
-        // (clicks on the game canvas/controls are still handled by the WebView).
-        DispatchQueue.main.async { [weak webView] in
-            webView?.window?.isMovableByWindowBackground = true
-        }
-
         webView.pageZoom = CGFloat(uiScale)
 
         if hasEngine {

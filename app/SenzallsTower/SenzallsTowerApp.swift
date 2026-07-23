@@ -15,9 +15,7 @@ struct SenzallsTowerApp: App {
             GameWebView(
                 uiScale: uiScale, launchSpeed: launchSpeed, startMuted: muteOnLaunch)
                 .frame(minWidth: 1024, minHeight: 700)
-                .ignoresSafeArea()
         }
-        .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
         .commands {
             SenzallCommands()
