@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Senzall's Tower — build a skyscraper on your Mac</title>
+<meta name="description" content="Senzall's Tower is a native, offline single-player tower-building simulation for macOS. Build offices, condos, hotels, shops, and elevators; keep tenants happy; grow to a five-star tower." />
+<meta property="og:title" content="Senzall's Tower" />
+<meta property="og:description" content="A native, offline single-player tower-building sim for the Mac." />
+<meta property="og:image" content="/assets/tower-5star.png" />
+<meta property="og:type" content="website" />
+<link rel="icon" href="/assets/icon.png" />
+<style>
+  :root{
+    --sky:#8ec6e6; --ink:#0b1220; --panel:#0e1218; --panel2:#141b26;
+    --line:rgba(123,148,170,.28); --text:#dce7f2; --muted:#9fb2c4;
+    --gold:#facc15; --green:#4ade80; --accent:#5a82c8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,"Helvetica Neue",sans-serif;
+    background:var(--ink);color:var(--text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  a{color:#9cc2ff;text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  code,kbd{font-family:ui-monospace,"SF Mono",Menlo,monospace}
+
+  header.hero{
+    background:linear-gradient(180deg,#141d33 0%,#24365e 40%,#3a5a8c 72%,#c78b63 100%);
+    padding:64px 0 0;text-align:center;position:relative;overflow:hidden;
+  }
+  .badge{display:inline-flex;gap:8px;align-items:center;background:rgba(0,0,0,.28);border:1px solid var(--line);
+    border-radius:999px;padding:6px 14px;font-size:13px;color:#e7eefaee;margin-bottom:18px}
+  h1{font-size:clamp(34px,6vw,60px);font-weight:800;letter-spacing:-.02em;line-height:1.05}
+  .tagline{font-size:clamp(16px,2.4vw,21px);color:#eaf2fb;max-width:640px;margin:14px auto 6px;font-weight:500}
+  .stars{color:var(--gold);font-size:20px;letter-spacing:2px;margin-top:10px}
+  .cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:28px 0 40px}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:10px;font-weight:700;font-size:15px;border:1px solid transparent}
+  .btn.primary{background:#111a2c;color:#fff;border-color:#2b3a55;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+  .btn.ghost{background:rgba(255,255,255,.14);color:#0b1220;border-color:rgba(0,0,0,.15);font-weight:700}
+  .heroshot{max-width:960px;margin:0 auto;transform:translateY(1px)}
+  .heroshot img{width:100%;display:block;border-radius:12px 12px 0 0;border:1px solid var(--line);border-bottom:none;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+
+  section{padding:64px 0}
+  section h2{font-size:clamp(24px,3.4vw,34px);font-weight:800;letter-spacing:-.01em;margin-bottom:8px}
+  section .sub{color:var(--muted);margin-bottom:28px;max-width:680px}
+
+  .install{background:var(--panel);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .cmd{background:#05070b;border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:15px}
+  .cmd code{color:#c7f9d0}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px}
+  .step{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .step b{color:#fff}
+  .muted{color:var(--muted)}
+
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:20px}
+  .card h3{font-size:17px;margin-bottom:6px}
+  .card p{color:var(--muted);font-size:15px}
+
+  .shots{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+  .shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel2)}
+  .shot img{width:100%;display:block}
+  .shot .cap{padding:12px 16px;font-size:14px;color:var(--muted)}
+  .shot .cap b{color:#fff}
+
+  .credits{background:var(--panel);border-top:1px solid var(--line)}
+  .credit{border-left:3px solid var(--accent);padding:6px 0 6px 16px;margin-bottom:20px}
+  .credit h3{font-size:18px}
+  .credit p{color:var(--muted);font-size:15px;margin-top:4px}
+
+  footer{padding:40px 0 60px;border-top:1px solid var(--line);color:var(--muted);font-size:14px;text-align:center}
+  .note{background:rgba(90,130,200,.12);border:1px solid var(--line);border-radius:10px;padding:14px 16px;color:#cbdaea;font-size:14px}
+  @media(max-width:760px){.steps,.grid,.shots{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="badge">🏙️ Native macOS · Offline · Free</span>
+    <h1>Senzall's Tower</h1>
+    <p class="tagline">Build a skyscraper floor by floor — offices, condos, hotels, shops, and elevators. Keep tenants happy and grow from a one-star building to a five-star tower.</p>
+    <div class="stars">★ ★ ★ ★ ★</div>
+    <div class="cta">
+      <a class="btn primary" href="#install">⬇︎ Install</a>
+      <a class="btn ghost" href="https://github.com/senzalldev/senzalls-tower">View on GitHub</a>
+    </div>
+  </div>
+  <div class="heroshot"><img src="/assets/tower-5star.png" alt="A five-star Senzall's Tower with offices, a lobby, and a stairwell" /></div>
+</header>
+
+<section class="install" id="install">
+  <div class="wrap">
+    <h2>Install</h2>
+    <p class="sub">Signed with a Developer ID and notarized by Apple — it opens cleanly on modern Macs. Requires macOS 14 (Sonoma) or later.</p>
+    <div class="cmd">
+      <code>brew install --cask senzalldev/tap/senzalls-tower</code>
+      <span class="muted">Homebrew</span>
+    </div>
+    <div class="steps">
+      <div class="step"><b>1 · Homebrew</b><p class="muted">Run the command above. That's it — Homebrew downloads, verifies, and installs the app.</p></div>
+      <div class="step"><b>2 · …or the DMG</b><p class="muted">Prefer a download? Grab the latest <a href="https://github.com/senzalldev/senzalls-tower/releases/latest">.dmg release</a>, open it, and drag <b>Senzall's Tower</b> to Applications.</p></div>
+      <div class="step"><b>3 · Play</b><p class="muted">Launch it. No account, no server, no network — it runs entirely on your Mac.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>How it plays</h2>
+    <p class="sub">A faithful, tick-accurate tower simulation. Place a lobby, stack floors, wire up elevators and stairs, and manage the flow of people and money.</p>
+    <div class="grid">
+      <div class="card"><h3>🏢 Build & grow</h3><p>Offices, condos, hotels, restaurants, shops, cinemas, and more unlock as your tower earns stars.</p></div>
+      <div class="card"><h3>🛗 Move the crowds</h3><p>Stairs, escalators, and standard / express / service elevators. Long waits make tenants unhappy — plan your transport.</p></div>
+      <div class="card"><h3>💵 Keep the books</h3><p>Collect rent, watch expenses, set rent levels. Grow steadily toward a five-star rating without going bankrupt.</p></div>
+      <div class="card"><h3>⭐ VIP guests</h3><p>A roster of named VIPs visits your tower — led by Senzall, the founder. Impress them with a well-run building.</p></div>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--panel);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+  <div class="wrap">
+    <h2>From one star to five</h2>
+    <p class="sub">Every tower starts small. Grow your population and keep tenants happy to climb the ratings and unlock bigger facilities.</p>
+    <div class="shots">
+      <div class="shot"><img src="/assets/tower-1star.png" alt="A one-star starter tower" /><div class="cap"><b>★ Starter</b> — a lobby, a few offices, and a stairwell.</div></div>
+      <div class="shot"><img src="/assets/tower-3star.png" alt="A three-star tower" /><div class="cap"><b>★★★ Growing</b> — more floors, condos, and commercial space.</div></div>
+      <div class="shot"><img src="/assets/tower-5star.png" alt="A five-star tower" /><div class="cap"><b>★★★★★ Thriving</b> — a tall, busy, five-star high-rise.</div></div>
+      <div class="shot"><img src="/assets/guide.png" alt="The in-app guide" /><div class="cap"><b>Built-in guide</b> — a full in-app wiki, Settings, Sound controls, and cheats.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="credits" id="credits">
+  <div class="wrap">
+    <h2>Credits &amp; thanks</h2>
+    <p class="sub">Senzall's Tower is an independent fork that packages an open-source engine as a native, offline Mac app. The game belongs to its author — this edition just brings it to the Mac.</p>
+
+    <div class="credit">
+      <h3>The game &amp; its author — Patrick Hulin</h3>
+      <p>The entire simulation and artwork is the work of <a href="https://github.com/phulin">Patrick Hulin</a>, creator of the open-source engine <a href="https://github.com/phulin/tower-together">tower-together</a> (MIT) — a clean-room reimplementation that ships none of any original game's assets or code. Thank you, Patrick.</p>
+    </div>
+
+    <div class="credit">
+      <h3>The originals — Yoot Saito &amp; OPeNBook</h3>
+      <p>The genre was defined by <b>SimTower</b> ("The Tower", 1994) by <b>Yoot Saito</b> and OPeNBook, published by Maxis, and its sequel <b>Yoot Tower</b> (1998). Deep thanks to Yoot Saito for the games — and for supporting their open-sourcing.</p>
+    </div>
+
+    <div class="credit">
+      <h3>Preservation — Don Hopkins</h3>
+      <p>Huge thanks to <a href="https://github.com/SimHacker">Don Hopkins</a>, who — with Yoot Saito — leads the effort to open-source and preserve the original sources (<a href="https://github.com/YootTowerManagement/YootTower">Yoot Tower</a>, <a href="https://github.com/SimHacker/MicropolisCore">MicropolisCore</a>), with support from the <a href="https://gamehistory.org">Video Game History Foundation</a>.</p>
+    </div>
+
+    <p class="note">Senzall's Tower is not affiliated with, endorsed by, or derived from the code or assets of SimTower / Yoot Tower. "SimTower" and "Yoot Tower" are trademarks of their respective owners.</p>
+
+    <div class="credit" style="margin-top:24px">
+      <h3>A note from the maker</h3>
+      <p>SimTower and Yoot Tower are among my favorite games of all time. I built this version for myself — to play my favorite game — and I wanted to share it with anyone who'd like to play it too. The credit for the game belongs to Patrick Hulin; I just packaged it for the Mac, working with Claude using modern AI tools.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><b>Senzall's Tower</b> · <a href="https://github.com/senzalldev/senzalls-tower">source</a> · <a href="https://github.com/senzalldev/senzalls-tower/releases/latest">releases</a> · MIT licensed</p>
+    <p style="margin-top:8px">Built with <a href="https://github.com/phaserjs/phaser">Phaser</a>, <a href="https://react.dev">React</a>, <a href="https://vite.dev">Vite</a>, and Apple's SwiftUI &amp; WebKit.</p>
+  </div>
+</footer>
+
+</body>
+</html>

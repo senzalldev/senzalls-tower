@@ -5,6 +5,7 @@ import { getDisplayName, getPlayerId } from "./lib/storage";
 import type { LocalTowerSocket } from "./local/LocalTowerSocket";
 import {
 	createLocalSocket,
+	demoSnapshot,
 	IS_LOCAL,
 	LOCAL_PLAYER_ID,
 	LOCAL_PLAYER_NAME,
@@ -147,6 +148,12 @@ export function App() {
 	// (startLocalSession reassigns it), or the effect would re-fire in a loop.
 	useEffect(() => {
 		if (!IS_LOCAL) return;
+		// Screenshot/demo hook: load an injected tower if present.
+		const demo = demoSnapshot();
+		if (demo) {
+			startLocalSession(demo);
+			return;
+		}
 		let cancelled = false;
 		void senzall.load("autosave").then((saved) => {
 			if (cancelled) return;

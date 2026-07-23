@@ -1,0 +1,17 @@
+{
+  // Cloudflare Workers static-assets site for tower.senzall.com.
+  // Deploy from this folder:  npx wrangler deploy
+  // Then bind the custom domain tower.senzall.com to this Worker in the
+  // Cloudflare dashboard (Workers & Pages → this worker → Settings → Domains &
+  // Routes → Add custom domain), or add a route. DNS for senzall.com is on
+  // Cloudflare, so the custom domain auto-creates the CNAME.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "senzall-tower",
+  "compatibility_date": "2025-09-27",
+  "assets": {
+    "directory": "."
+  },
+  "observability": {
+    "enabled": true
+  }
+}

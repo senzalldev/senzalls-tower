@@ -10,6 +10,8 @@ VIP guests like **Senzall**.
 Runs entirely on your Mac — no account, no server, no network. Signed with a
 Developer ID and notarized by Apple, so it opens cleanly on modern Macs.
 
+**Website:** [tower.senzall.com](https://tower.senzall.com)
+
 > **This is a fork.** The game itself — its simulation, rules, and art — is the
 > work of **Patrick Hulin**, who created the open-source engine
 > [tower-together](https://github.com/phulin/tower-together). Senzall's Tower
@@ -58,6 +60,14 @@ Speed ⌘1 / ⌘2 / ⌘3 · Settings ⌘, · Guide ⌘?
 - A named VIP roster and an in-app guide with a What's New changelog.
 
 ---
+
+## Known issues
+
+- **Unreachable units stay vacant / condos can refund** when there's no working
+  route (elevator or stairs) between a unit and the lobby. This is behavior in the
+  vendored engine — see [#1](https://github.com/senzalldev/senzalls-tower/issues/1)
+  (tracks upstream [tower-together#5](https://github.com/phulin/tower-together/issues/5)).
+  Fix: connect every occupied floor to the lobby. We'll re-vendor when upstream ships a fix.
 
 ## Credits & Thanks
 

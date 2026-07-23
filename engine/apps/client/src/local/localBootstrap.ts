@@ -19,6 +19,31 @@ export interface LaunchSettings {
 	muted: boolean;
 }
 
+/**
+ * Demo/screenshot hook: a prebuilt SimSnapshot can be injected on
+ * `window.__SENZALL_SNAPSHOT` (e.g. via Playwright addInitScript) to load a
+ * specific tower for capture. Ignored when unset.
+ */
+export function demoSnapshot(): SimSnapshot | null {
+	const win = window as unknown as {
+		__SENZALL_SNAPSHOT?: SimSnapshot | string;
+	};
+	let raw: SimSnapshot | string | null = win.__SENZALL_SNAPSHOT ?? null;
+	if (!raw) {
+		try {
+			raw = window.localStorage.getItem("__SENZALL_SNAPSHOT");
+		} catch {
+			raw = null;
+		}
+	}
+	if (!raw) return null;
+	try {
+		return typeof raw === "string" ? (JSON.parse(raw) as SimSnapshot) : raw;
+	} catch {
+		return null;
+	}
+}
+
 export function launchSettings(): LaunchSettings {
 	const raw = (
 		window as unknown as { __SENZALL_LAUNCH?: Partial<LaunchSettings> }
