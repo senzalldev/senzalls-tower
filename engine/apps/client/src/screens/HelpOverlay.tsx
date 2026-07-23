@@ -30,6 +30,12 @@ interface ChangeEntry {
 // Newest first. Bump this with each release.
 const CHANGELOG: ChangeEntry[] = [
 	{
+		version: "1.0.16",
+		notes: [
+			"Emergency prompts (bomb/fire) now pause the clock until you answer.",
+		],
+	},
+	{
 		version: "1.0.15",
 		notes: ["Sound menu: added Mute All Sounds (alongside Enable All)."],
 	},

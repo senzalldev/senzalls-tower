@@ -182,6 +182,10 @@ export class TowerSessionController {
 	private lastSimTime = 0;
 	private vipVisitCount = 0;
 	private lastVipTick = Number.NEGATIVE_INFINITY;
+	// Auto-pause the sim while an emergency prompt (bomb/fire) is on screen so it
+	// can't detonate before the player answers (esp. at 3x/10x). Upstream issue #6.
+	private pausedByPrompt = false;
+	private pausedBeforePrompt = false;
 	private unsubscribeMessage: (() => void) | null = null;
 	private unsubscribeStatus: (() => void) | null = null;
 
@@ -387,6 +391,14 @@ export class TowerSessionController {
 			},
 		]);
 		this.patchState({ activePrompt: null });
+		this.resumeAfterPrompt();
+	}
+
+	/** Restore the clock after an emergency prompt is answered/dismissed. */
+	private resumeAfterPrompt(): void {
+		if (!this.pausedByPrompt) return;
+		this.pausedByPrompt = false;
+		this.setPaused(this.pausedBeforePrompt);
 	}
 
 	dismissStarUpgrade(): void {
@@ -601,14 +613,18 @@ export class TowerSessionController {
 						cost: msg.cost,
 					},
 				});
+				// Freeze the clock while the emergency decision is on screen.
+				if (!this.pausedByPrompt) {
+					this.pausedBeforePrompt = this.state.paused;
+					this.pausedByPrompt = true;
+					if (!this.state.paused) this.setPaused(true);
+				}
 				break;
 			case "prompt_dismissed":
-				this.patchState({
-					activePrompt:
-						this.state.activePrompt?.promptId === msg.promptId
-							? null
-							: this.state.activePrompt,
-				});
+				if (this.state.activePrompt?.promptId === msg.promptId) {
+					this.patchState({ activePrompt: null });
+					this.resumeAfterPrompt();
+				}
 				break;
 			case "cell_info":
 				this.patchState({
