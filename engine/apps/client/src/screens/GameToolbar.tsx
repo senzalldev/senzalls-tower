@@ -8,17 +8,9 @@ import {
 	useState,
 } from "react";
 import { IS_LOCAL } from "../local/localBootstrap";
-import { senzall } from "../local/nativeBridge";
 import type { ConnectionStatus } from "../types";
 import { DAY_TICK_MAX } from "../types";
 import { gameScreenStyles as styles } from "./gameScreenStyles";
-
-// Version injected by the native macOS shell (window.__SENZALL_VERSION).
-const APP_VERSION =
-	typeof window !== "undefined"
-		? ((window as unknown as { __SENZALL_VERSION?: string })
-				.__SENZALL_VERSION ?? "")
-		: "";
 
 const COMPACT_QUERY = "(max-width: 720px)";
 
@@ -303,16 +295,7 @@ export const GameToolbar = memo(
 						</form>
 					) : (
 						!isCompact &&
-						(IS_LOCAL ? (
-							<button
-								type="button"
-								style={styles.towerLabel}
-								title="About Senzall's Tower — details & credits"
-								onClick={() => senzall.showAbout()}
-							>
-								{towerName || towerId}
-							</button>
-						) : (
+						!IS_LOCAL && (
 							<button
 								type="button"
 								style={styles.towerLabel}
@@ -321,20 +304,7 @@ export const GameToolbar = memo(
 							>
 								{towerName || towerId}
 							</button>
-						))
-					)}
-					{!isCompact && APP_VERSION && (
-						<span
-							style={{
-								fontSize: 11,
-								opacity: 0.5,
-								marginLeft: 6,
-								alignSelf: "center",
-							}}
-							title="Version"
-						>
-							v{APP_VERSION}
-						</span>
+						)
 					)}
 				</div>
 

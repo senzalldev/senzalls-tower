@@ -30,6 +30,10 @@ interface ChangeEntry {
 // Newest first. Bump this with each release.
 const CHANGELOG: ChangeEntry[] = [
 	{
+		version: "1.0.13",
+		notes: ["Cleaner title bar: single title, version shown as a subtitle."],
+	},
+	{
 		version: "1.0.12",
 		notes: ["The window can now be moved (standard title bar)."],
 	},

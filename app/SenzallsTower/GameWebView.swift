@@ -67,6 +67,12 @@ struct GameWebView: NSViewRepresentable {
 
         webView.pageZoom = CGFloat(uiScale)
 
+        // Show the version as the title-bar subtitle (lighter text beside the
+        // window title) — the native, non-duplicated place for it.
+        DispatchQueue.main.async { [weak webView] in
+            webView?.window?.subtitle = "v\(shortVer)"
+        }
+
         if hasEngine {
             webView.load(URLRequest(url: EngineSchemeHandler.indexURL))
         } else {
