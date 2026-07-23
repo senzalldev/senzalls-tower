@@ -42,6 +42,8 @@ export const gameScreenStyles = {
 	},
 	toolbarLeft: { display: "flex", alignItems: "center", gap: 12 },
 	toolbarRight: { display: "flex", alignItems: "center", gap: 14 },
+	// One of the three justified clusters (controls · economy · clock).
+	toolbarGroup: { display: "flex", alignItems: "center", gap: 12 },
 	toolbarStatus: { display: "flex", alignItems: "center", gap: 6 },
 	cashCluster: { display: "flex", alignItems: "center", gap: 10 },
 	towerLabel: {

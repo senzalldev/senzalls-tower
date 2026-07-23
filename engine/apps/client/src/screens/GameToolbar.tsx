@@ -259,7 +259,9 @@ export const GameToolbar = memo(
 					...(isCompact ? styles.toolbarRowFlush : {}),
 				}}
 			>
-				<div style={styles.toolbarLeft}>
+				{/* LEFT: identity (online only) + playback controls */}
+				<div style={styles.toolbarGroup}>
+					{import.meta.env.DEV && <span style={styles.devBadge}>DEV</span>}
 					{isRenaming ? (
 						<form
 							style={styles.renameForm}
@@ -306,10 +308,6 @@ export const GameToolbar = memo(
 							</button>
 						)
 					)}
-				</div>
-
-				<div style={styles.toolbarRight}>
-					{import.meta.env.DEV && <span style={styles.devBadge}>DEV</span>}
 					<span ref={speedMenuRef} style={styles.speedButtons}>
 						<button
 							type="button"
@@ -362,6 +360,10 @@ export const GameToolbar = memo(
 					>
 						{soundMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
 					</button>
+				</div>
+
+				{/* CENTER: economy — cash, population, star rating */}
+				<div style={styles.toolbarGroup}>
 					<span style={styles.cashCluster}>
 						<span ref={cashSpanRef} style={styles.cashDisplay} />
 						<span ref={popSpanRef} style={styles.populationDisplay} />
@@ -382,6 +384,10 @@ export const GameToolbar = memo(
 							})}
 						</span>
 					</span>
+				</div>
+
+				{/* RIGHT: calendar & clock (+ online presence / leave) */}
+				<div style={styles.toolbarGroup}>
 					{!isCompact && (
 						<>
 							<span ref={dateSpanRef} style={styles.calendarItem} />
